@@ -3,7 +3,7 @@
    JSCAN - ACTIVITY HISTORY
    QR + BARCODE + ALL TOOL FILES
    5-DAY TEMPORARY FILE RETENTION
-   VIEW + DOWNLOAD + DELETE
+   VIEW + DOWNLOAD + COPY + DELETE
    PAGINATION + AUTHENTICATION
 ========================================== */
 
@@ -292,11 +292,20 @@ document.addEventListener("DOMContentLoaded", async () => {
         return String(record.tool_name || "").toLowerCase();
     }
 
+    function getScannerResult(record) {
+        const details = getDetails(record);
+
+        return String(
+            details.scanned_text ||
+            details.scan_result ||
+            details.result ||
+            details.value ||
+            ""
+        );
+    }
+
     /* ==========================================
        PERMANENT TOOL CLASSIFICATION
-
-       These tools NEVER expire automatically.
-       Users CAN manually delete their records.
     ========================================== */
 
     function isPermanentRecord(record) {
@@ -383,6 +392,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         if (name.includes("qr")) return "▦";
         if (name.includes("barcode")) return "▥";
+        if (name.includes("scanner")) return "⌕";
         if (name.includes("compress")) return "⇣";
         if (name.includes("merge")) return "⊕";
         if (name.includes("split")) return "✂";
@@ -952,6 +962,120 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     /* ==========================================
+       VIEW SCANNER RESULT
+    ========================================== */
+
+    function viewScannerResult(record) {
+        const scannedText = getScannerResult(record);
+
+        if (!scannedText) {
+            alert("No scanned result is available for this record.");
+            return;
+        }
+
+        openPreviewModal(
+            null,
+            "Scanned Result",
+            "jscan-scanned-result.txt"
+        );
+
+        // Scanner results are text, so display them in the preview area.
+        qrPreviewImage.hidden = true;
+        qrPreviewLoading.hidden = true;
+
+        let resultDisplay = document.getElementById(
+            "scannerHistoryPreviewText"
+        );
+
+        if (!resultDisplay) {
+            resultDisplay = document.createElement("div");
+            resultDisplay.id = "scannerHistoryPreviewText";
+
+            resultDisplay.style.cssText = `
+                width: 100%;
+                max-height: 65vh;
+                overflow: auto;
+                padding: 20px;
+                border: 1px solid var(--border-color, #ddd);
+                border-radius: 10px;
+                background: var(--card-bg, transparent);
+                color: var(--text-color, inherit);
+                white-space: pre-wrap;
+                overflow-wrap: anywhere;
+                line-height: 1.6;
+                font-size: 14px;
+            `;
+
+            qrPreviewImage.insertAdjacentElement(
+                "afterend",
+                resultDisplay
+            );
+        }
+
+        resultDisplay.textContent = scannedText;
+        resultDisplay.hidden = false;
+
+        currentPreviewUrl = null;
+        currentPreviewFileName = "jscan-scanned-result.txt";
+
+        qrPreviewDownload.disabled = false;
+    }
+
+    /* ==========================================
+       DOWNLOAD SCANNER RESULT
+    ========================================== */
+
+    function downloadScannerResult(record, button) {
+        const scannedText = getScannerResult(record);
+
+        if (!scannedText) {
+            alert("No scanned result is available.");
+            return;
+        }
+
+        const blob = new Blob(
+            [scannedText],
+            { type: "text/plain;charset=utf-8" }
+        );
+
+        downloadBlob(blob, "jscan-scanned-result.txt");
+    }
+
+    /* ==========================================
+       COPY SCANNER RESULT
+    ========================================== */
+
+    async function copyScannerResult(record, button) {
+        const scannedText = getScannerResult(record);
+
+        if (!scannedText) {
+            alert("No scanned result is available.");
+            return;
+        }
+
+        try {
+            await navigator.clipboard.writeText(scannedText);
+
+            const originalText = button.textContent;
+
+            button.textContent = "Copied!";
+            button.disabled = true;
+
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.disabled = false;
+            }, 1500);
+
+        } catch (error) {
+            console.error("Scanner copy error:", error);
+
+            alert(
+                "Unable to copy the result. Please try again."
+            );
+        }
+    }
+
+    /* ==========================================
        PREVIEW DOWNLOAD BUTTON
     ========================================== */
 
@@ -996,6 +1120,28 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     });
 
+    // Hide text preview whenever the modal is closed.
+    const originalClosePreview = closePreview;
+
+    function closePreviewWithTextCleanup() {
+        const resultDisplay = document.getElementById(
+            "scannerHistoryPreviewText"
+        );
+
+        if (resultDisplay) {
+            resultDisplay.hidden = true;
+            resultDisplay.textContent = "";
+        }
+
+        originalClosePreview();
+    }
+
+    closeQrPreview.removeEventListener("click", closePreview);
+    closeQrPreviewBtn.removeEventListener("click", closePreview);
+
+    closeQrPreview.addEventListener("click", closePreviewWithTextCleanup);
+    closeQrPreviewBtn.addEventListener("click", closePreviewWithTextCleanup);
+
     /* ==========================================
        DELETE ASSOCIATED STORAGE FILE
     ========================================== */
@@ -1013,7 +1159,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             path = temporaryFile.path;
         }
 
-        // QR files are stored separately from temporary files.
         if (name.includes("qr")) {
             const qrPath = getQrImagePath(record);
 
@@ -1023,8 +1168,9 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
         }
 
-        // Barcode images are recreated from saved details.
-        // Scanner results are stored as activity data.
+        // Scanner results and barcode records are stored in History,
+        // not as separate files.
+
         if (!bucket || !path) {
             return true;
         }
@@ -1035,6 +1181,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         if (error) {
             console.error("Storage deletion error:", error);
+
             throw new Error(
                 "The associated file could not be deleted. Your History record has been kept."
             );
@@ -1045,9 +1192,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     /* ==========================================
        DELETE SINGLE HISTORY RECORD
-
-       Works for ALL 13 tools.
-       Storage is deleted before the History row.
     ========================================== */
 
     async function deleteHistory(id) {
@@ -1286,16 +1430,8 @@ document.addEventListener("DOMContentLoaded", async () => {
                     ? "history-expired"
                     : "";
 
-            const scannerDetails = getDetails(record);
-
             const scannerResult = getToolName(record).includes("scanner")
-                ? (
-                    scannerDetails.scanned_text ||
-                    scannerDetails.scan_result ||
-                    scannerDetails.result ||
-                    scannerDetails.value ||
-                    ""
-                )
+                ? getScannerResult(record)
                 : "";
 
             const canViewQr = Boolean(imagePath);
@@ -1303,6 +1439,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             const canViewTemporary =
                 Boolean(temporaryFile) && !expired;
+
+            const canViewScannerResult =
+                getToolName(record).includes("scanner") &&
+                Boolean(scannerResult);
 
             return `
                 <article
@@ -1397,6 +1537,29 @@ document.addEventListener("DOMContentLoaded", async () => {
                             </button>
                         ` : ""}
 
+                        ${canViewScannerResult ? `
+                            <button
+                                type="button"
+                                class="btn btn-ghost view-scanner-btn"
+                                data-id="${escapeHTML(record.id)}">
+                                View
+                            </button>
+
+                            <button
+                                type="button"
+                                class="btn btn-ghost copy-scanner-btn"
+                                data-id="${escapeHTML(record.id)}">
+                                Copy
+                            </button>
+
+                            <button
+                                type="button"
+                                class="btn btn-ghost download-scanner-btn"
+                                data-id="${escapeHTML(record.id)}">
+                                Download
+                            </button>
+                        ` : ""}
+
                         <button
                             type="button"
                             class="btn btn-ghost delete-history-btn"
@@ -1483,6 +1646,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     ========================================== */
 
     historyList.addEventListener("click", async event => {
+
         const viewQrButton = event.target.closest(".view-qr-btn");
         const downloadQrButton = event.target.closest(".download-qr-btn");
 
@@ -1495,6 +1659,15 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         const downloadTemporaryButton =
             event.target.closest(".download-temporary-btn");
+
+        const viewScannerButton =
+            event.target.closest(".view-scanner-btn");
+
+        const copyScannerButton =
+            event.target.closest(".copy-scanner-btn");
+
+        const downloadScannerButton =
+            event.target.closest(".download-scanner-btn");
 
         const deleteButton =
             event.target.closest(".delete-history-btn");
@@ -1572,6 +1745,42 @@ document.addEventListener("DOMContentLoaded", async () => {
             return;
         }
 
+        if (viewScannerButton) {
+            const record = currentPageRecords.find(
+                item => String(item.id) === viewScannerButton.dataset.id
+            );
+
+            if (record) {
+                viewScannerResult(record);
+            }
+
+            return;
+        }
+
+        if (copyScannerButton) {
+            const record = currentPageRecords.find(
+                item => String(item.id) === copyScannerButton.dataset.id
+            );
+
+            if (record) {
+                await copyScannerResult(record, copyScannerButton);
+            }
+
+            return;
+        }
+
+        if (downloadScannerButton) {
+            const record = currentPageRecords.find(
+                item => String(item.id) === downloadScannerButton.dataset.id
+            );
+
+            if (record) {
+                downloadScannerResult(record, downloadScannerButton);
+            }
+
+            return;
+        }
+
         if (!deleteButton) return;
 
         const id = deleteButton.dataset.id;
@@ -1598,11 +1807,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     /* ==========================================
        CLEAR TEMPORARY HISTORY ONLY
-
-       Permanent QR, barcode and scanner records
-       are preserved by this button.
-
-       Individual Delete buttons work for ALL tools.
     ========================================== */
 
     async function getAllTemporaryRecords() {
@@ -1656,10 +1860,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
                 if (error || !data?.length) {
                     failedCount++;
+
                     console.error(
                         "Could not delete temporary History record:",
                         error
                     );
+
                 } else {
                     deletedCount++;
                 }
@@ -1703,8 +1909,10 @@ document.addEventListener("DOMContentLoaded", async () => {
                 alert(
                     `${result.deletedCount} activities deleted. ${result.failedCount} could not be deleted. Please try again for those activities.`
                 );
+
             } else if (result.deletedCount === 0) {
                 alert("There are no temporary activities to clear.");
+
             } else {
                 alert(
                     `${result.deletedCount} temporary activities deleted successfully. Your permanent-tool History records were preserved.`
