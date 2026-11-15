@@ -17,19 +17,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const copyBtn = document.getElementById('copyResultBtn');
     const openBtn = document.getElementById('openResultBtn');
 
+    const db = window.jscanDB;
+
     if (!startBtn || !stopBtn || !reader) return;
 
     let scanner = null;
     let cameraRunning = false;
     let lastResult = '';
     let imagePreviewUrl = null;
+    let historySaveAttempted = false;
 
     function showMessage(text, error = false) {
+        if (!message) return;
+
         message.textContent = text;
         message.style.color = error ? '#dc2626' : 'var(--muted)';
     }
 
     function resetResult() {
+
         resultBox.hidden = true;
         resultText.textContent = '';
 
@@ -45,9 +51,79 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         lastResult = '';
+        historySaveAttempted = false;
     }
 
-    function displayResult(decodedText) {
+    // ==========================================
+    // SAVE SCAN RESULT TO SUPABASE HISTORY
+    // ==========================================
+
+    async function saveScanToHistory(decodedText, source) {
+
+        if (!decodedText || historySaveAttempted) return;
+
+        historySaveAttempted = true;
+
+        if (!db) {
+            console.error('JScan database client is unavailable.');
+            showMessage('Scan successful, but History could not be reached.', true);
+            return;
+        }
+
+        try {
+
+            showMessage('Scan successful. Saving to History...');
+
+            const { data: userData, error: userError } =
+                await db.auth.getUser();
+
+            if (userError) throw userError;
+
+            const user = userData?.user;
+
+            if (!user) {
+                throw new Error('Please sign in to save scan history.');
+            }
+
+            const { error: insertError } = await db
+                .from('activity_history')
+                .insert({
+                    user_id: user.id,
+                    tool_name: 'QR & Barcode Scanner',
+                    action: 'scan',
+                    file_name: null,
+                    status: 'completed',
+                    details: {
+                        scanned_text: decodedText,
+                        scan_result: decodedText,
+                        source: source,
+                        scanned_at: new Date().toISOString()
+                    },
+                    is_permanent: true,
+                    expires_at: null
+                });
+
+            if (insertError) throw insertError;
+
+            showMessage('Scan successful and added to History!');
+
+        } catch (error) {
+
+            console.error('Scanner History Error:', error);
+
+            showMessage(
+                'Scan successful, but could not be added to History.',
+                true
+            );
+
+        }
+    }
+
+    // ==========================================
+    // DISPLAY SCANNED RESULT
+    // ==========================================
+
+    function displayResult(decodedText, source = 'camera') {
 
         if (!decodedText) return;
 
@@ -59,6 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let parsedUrl;
 
         try {
+
             parsedUrl = new URL(decodedText);
 
             if (
@@ -75,18 +152,26 @@ document.addEventListener('DOMContentLoaded', () => {
             openBtn.hidden = true;
         }
 
-        showMessage('QR code scanned successfully!');
+        saveScanToHistory(decodedText, source);
 
-        stopCamera();
+        if (source === 'camera') {
+            stopCamera(true);
+        }
     }
 
-    async function stopCamera() {
+    // ==========================================
+    // STOP CAMERA
+    // ==========================================
+
+    async function stopCamera(silent = false) {
 
         if (!scanner || !cameraRunning) {
+
             cameraRunning = false;
             reader.hidden = true;
             stopBtn.hidden = true;
             startBtn.hidden = false;
+
             return;
         }
 
@@ -100,24 +185,35 @@ document.addEventListener('DOMContentLoaded', () => {
             stopBtn.hidden = true;
             startBtn.hidden = false;
 
-            showMessage('Camera stopped.');
+            if (!silent) {
+                showMessage('Camera stopped.');
+            }
 
         } catch (error) {
 
             console.error('Camera stop error:', error);
 
-            showMessage('Unable to stop the camera. Please try again.', true);
+            showMessage(
+                'Unable to stop the camera. Please try again.',
+                true
+            );
 
         }
     }
 
+    // ==========================================
+    // START CAMERA
+    // ==========================================
+
     async function startCamera() {
 
         if (typeof Html5Qrcode === 'undefined') {
+
             showMessage(
                 'Scanner library could not load. Check your internet connection.',
                 true
             );
+
             return;
         }
 
@@ -126,7 +222,6 @@ document.addEventListener('DOMContentLoaded', () => {
         resetResult();
 
         reader.hidden = false;
-
         startBtn.disabled = true;
 
         showMessage('Requesting camera permission...');
@@ -148,9 +243,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     aspectRatio: 1
                 },
                 (decodedText) => {
-                    if (cameraRunning) {
-                        displayResult(decodedText);
+
+                    if (cameraRunning && !historySaveAttempted) {
+                        displayResult(decodedText, 'camera');
                     }
+
                 },
                 () => {}
             );
@@ -185,129 +282,140 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // ==========================================
+    // BUTTON EVENTS
+    // ==========================================
+
     startBtn.addEventListener('click', startCamera);
 
-    stopBtn.addEventListener('click', stopCamera);
+    stopBtn.addEventListener('click', () => stopCamera());
 
-    imageInput.addEventListener('change', async () => {
+    // ==========================================
+    // SCAN UPLOADED IMAGE
+    // ==========================================
 
-        const file = imageInput.files[0];
+    if (imageInput) {
 
-        if (!file) return;
+        imageInput.addEventListener('change', async () => {
 
-        if (!file.type.startsWith('image/')) {
-            showMessage('Please select a valid image file.', true);
-            imageInput.value = '';
-            return;
-        }
+            const file = imageInput.files[0];
 
-        if (file.size > 15 * 1024 * 1024) {
-            showMessage('Image is too large. Maximum size is 15MB.', true);
-            imageInput.value = '';
-            return;
-        }
+            if (!file) return;
 
-        if (cameraRunning) {
-            await stopCamera();
-        }
+            if (!file.type.startsWith('image/')) {
 
-        if (typeof Html5Qrcode === 'undefined') {
-            showMessage('Scanner library could not load.', true);
-            return;
-        }
+                showMessage('Please select a valid image file.', true);
+                imageInput.value = '';
 
-        resetResult();
+                return;
+            }
 
-        uploadFileName.textContent = file.name;
+            if (file.size > 15 * 1024 * 1024) {
 
-        imagePreviewUrl = URL.createObjectURL(file);
+                showMessage('Image is too large. Maximum size is 15MB.', true);
+                imageInput.value = '';
 
-        preview.src = imagePreviewUrl;
-        preview.hidden = false;
+                return;
+            }
 
-        reader.hidden = false;
+            if (cameraRunning) {
+                await stopCamera(true);
+            }
 
-        showMessage('Scanning uploaded image...');
+            if (typeof Html5Qrcode === 'undefined') {
 
-        let imageScanner = null;
+                showMessage('Scanner library could not load.', true);
+                return;
+            }
 
-        try {
+            resetResult();
 
-            imageScanner = new Html5Qrcode('reader');
+            if (uploadFileName) {
+                uploadFileName.textContent = file.name;
+            }
 
-            const decodedText = await imageScanner.scanFile(file, false);
+            imagePreviewUrl = URL.createObjectURL(file);
 
-            lastResult = decodedText;
+            preview.src = imagePreviewUrl;
+            preview.hidden = false;
 
-            resultText.textContent = decodedText;
-            resultBox.hidden = false;
+            reader.hidden = false;
 
-            let parsedUrl;
+            showMessage('Scanning uploaded image...');
+
+            let imageScanner = null;
 
             try {
 
-                parsedUrl = new URL(decodedText);
+                imageScanner = new Html5Qrcode('reader');
 
-                if (
-                    parsedUrl.protocol === 'https:' ||
-                    parsedUrl.protocol === 'http:'
-                ) {
-                    openBtn.href = parsedUrl.href;
-                    openBtn.hidden = false;
-                } else {
-                    openBtn.hidden = true;
+                const decodedText = await imageScanner.scanFile(file, false);
+
+                displayResult(decodedText, 'uploaded_image');
+
+            } catch (error) {
+
+                console.error('Image scan error:', error);
+
+                showMessage(
+                    'No QR code was detected. Try a clearer image.',
+                    true
+                );
+
+                preview.hidden = false;
+
+            } finally {
+
+                if (imageScanner) {
+
+                    try {
+                        await imageScanner.clear();
+                    } catch (error) {
+                        console.warn('Scanner cleanup:', error);
+                    }
+
                 }
 
-            } catch {
-                openBtn.hidden = true;
+                reader.hidden = true;
+
             }
 
-            showMessage('QR code detected successfully!');
+        });
 
-        } catch (error) {
+    }
 
-            console.error('Image scan error:', error);
+    // ==========================================
+    // COPY RESULT
+    // ==========================================
 
-            showMessage(
-                'No QR code was detected. Try a clearer image.',
-                true
-            );
+    if (copyBtn) {
 
-            preview.hidden = false;
+        copyBtn.addEventListener('click', async () => {
 
-        } finally {
+            if (!lastResult) return;
 
-            if (imageScanner) {
-                try {
-                    await imageScanner.clear();
-                } catch (error) {
-                    console.warn('Scanner cleanup:', error);
-                }
+            try {
+
+                await navigator.clipboard.writeText(lastResult);
+
+                showMessage('Result copied successfully!');
+
+            } catch (error) {
+
+                showMessage(
+                    'Unable to copy. Please select and copy the result.',
+                    true
+                );
+
             }
 
-            reader.hidden = true;
+        });
 
-        }
+    }
 
-    });
-
-    copyBtn.addEventListener('click', async () => {
-
-        if (!lastResult) return;
-
-        try {
-
-            await navigator.clipboard.writeText(lastResult);
-
-            showMessage('Result copied successfully!');
-
-        } catch (error) {
-
-            showMessage('Unable to copy. Please select and copy the result.', true);
-
-        }
-
-    });
+    // ==========================================
+    // INITIAL STATE
+    // ==========================================
 
     reader.hidden = true;
     stopBtn.hidden = true;
