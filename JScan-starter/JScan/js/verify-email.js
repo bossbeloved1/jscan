@@ -21,13 +21,50 @@ document.addEventListener('DOMContentLoaded', () => {
         params.get('email') ||
         sessionStorage.getItem('jscan_pending_email');
 
-    let expiryTime = Date.now() + (10 * 60 * 1000);
+    const db = window.jscanDB;
+
+    let expiryTime;
     let countdownInterval;
     let resendInterval;
 
-    // Check required elements
+    // ======================================
+    // DISPLAY VERIFICATION MESSAGES
+    // ======================================
+
+    function showMessage(message, type = 'error') {
+
+        if (!verifyMessage) return;
+
+        verifyMessage.textContent = message;
+
+        verifyMessage.style.color =
+            type === 'success' ? '#16a34a' :
+            type === 'info' ? 'var(--blue)' :
+            '#ef4444';
+    }
+
+    // ======================================
+    // DISPLAY RESEND MESSAGES
+    // ======================================
+
+    function showResendMessage(message, type = 'error') {
+
+        if (!resendMessage) return;
+
+        resendMessage.textContent = message;
+
+        resendMessage.style.color =
+            type === 'success' ? '#16a34a' :
+            type === 'info' ? 'var(--blue)' :
+            '#ef4444';
+    }
+
+    // ======================================
+    // CHECK REQUIRED ELEMENTS
+    // ======================================
+
     if (
-        !window.jscanDB ||
+        !db ||
         !verifyForm ||
         !otpCode ||
         !verifyBtn ||
@@ -37,39 +74,49 @@ document.addEventListener('DOMContentLoaded', () => {
         !countdown ||
         !verificationEmail
     ) {
+
         console.error('JScan verification setup is incomplete.');
+
+        showMessage(
+            'Unable to load email verification. Please refresh the page.'
+        );
+
         return;
     }
 
+    // ======================================
+    // CHECK EMAIL ADDRESS
+    // ======================================
+
     if (!email) {
-        showMessage('No verification email found. Please register again.');
+
+        showMessage(
+            'No verification email found. Please register again.'
+        );
+
         verifyBtn.disabled = true;
         resendBtn.disabled = true;
+
         return;
     }
 
     verificationEmail.textContent = email;
 
-    // Messages
-    function showMessage(message, type = 'error') {
-        verifyMessage.textContent = message;
-        verifyMessage.style.color =
-            type === 'success' ? 'green' : 'red';
-    }
+    // ======================================
+    // OTP EXPIRY COUNTDOWN
+    // ======================================
 
-    function showResendMessage(message, type = 'error') {
-        resendMessage.textContent = message;
-        resendMessage.style.color =
-            type === 'success' ? 'green' : 'red';
-    }
-
-    // OTP expiry countdown
     function startCountdown() {
+
         clearInterval(countdownInterval);
+
+        // Display a 10-minute estimated countdown.
+        // Actual OTP expiry is controlled by Supabase.
 
         expiryTime = Date.now() + (10 * 60 * 1000);
 
-        countdownInterval = setInterval(() => {
+        function updateCountdown() {
+
             const remaining = Math.max(
                 0,
                 Math.ceil((expiryTime - Date.now()) / 1000)
@@ -82,15 +129,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 `Code expires in ${minutes}:${String(seconds).padStart(2, '0')}`;
 
             if (remaining <= 0) {
+
                 clearInterval(countdownInterval);
+
                 countdown.textContent =
                     'Code may have expired. Request a new code.';
+
             }
-        }, 1000);
+
+        }
+
+        updateCountdown();
+
+        countdownInterval = setInterval(updateCountdown, 1000);
     }
 
-    // Resend cooldown: 60 seconds
+    // ======================================
+    // RESEND COOLDOWN
+    // ======================================
+
     function startResendCooldown() {
+
         clearInterval(resendInterval);
 
         let remaining = 60;
@@ -101,13 +160,16 @@ document.addEventListener('DOMContentLoaded', () => {
             `Resend code (${remaining}s)`;
 
         resendInterval = setInterval(() => {
+
             remaining--;
 
             if (remaining <= 0) {
+
                 clearInterval(resendInterval);
 
                 resendBtn.disabled = false;
                 resendBtn.textContent = 'Resend code';
+
                 return;
             }
 
@@ -117,18 +179,29 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 1000);
     }
 
-    // Start timers
+    // ======================================
+    // START TIMERS
+    // ======================================
+
     startCountdown();
     startResendCooldown();
 
-    // Allow numbers only
+    // ======================================
+    // ALLOW NUMBERS ONLY
+    // ======================================
+
     otpCode.addEventListener('input', () => {
+
         otpCode.value = otpCode.value
             .replace(/\D/g, '')
             .slice(0, 6);
+
     });
 
+    // ======================================
     // VERIFY OTP
+    // ======================================
+
     verifyForm.addEventListener('submit', async (event) => {
 
         event.preventDefault();
@@ -136,33 +209,48 @@ document.addEventListener('DOMContentLoaded', () => {
         const token = otpCode.value.trim();
 
         if (!/^\d{6}$/.test(token)) {
-            showMessage('Please enter a valid 6-digit verification code.');
+
+            showMessage(
+                'Please enter a valid 6-digit verification code.'
+            );
+
+            otpCode.focus();
+
             return;
         }
 
         verifyBtn.disabled = true;
         verifyBtn.textContent = 'Verifying...';
 
-        showMessage('Verifying your email address...', 'success');
+        showMessage(
+            'Verifying your email address...',
+            'info'
+        );
 
         try {
-            const { data, error } =
-                await window.jscanDB.auth.verifyOtp({
-                    email: email,
-                    token: token,
-                    type: 'signup'
-                });
+
+            const { data, error } = await db.auth.verifyOtp({
+
+                email: email,
+                token: token,
+                type: 'signup'
+
+            });
 
             if (error) throw error;
 
             if (!data.session) {
+
                 throw new Error(
                     'Verification succeeded, but your login session was not established. Please log in.'
                 );
+
             }
 
+            // Clear pending verification email
             sessionStorage.removeItem('jscan_pending_email');
 
+            // Stop timers
             clearInterval(countdownInterval);
             clearInterval(resendInterval);
 
@@ -174,22 +262,34 @@ document.addEventListener('DOMContentLoaded', () => {
             verifyBtn.textContent = 'Verified successfully';
 
             setTimeout(() => {
-                window.location.href = 'dashboard.html';
+
+                window.location.replace('/dashboard.html');
+
             }, 1200);
 
         } catch (error) {
-            console.error('JScan OTP verification error:', error);
+
+            console.error(
+                'JScan OTP verification error:',
+                error
+            );
 
             showMessage(
-                error.message || 'Invalid or expired code. Please try again.'
+                error.message ||
+                'Invalid or expired code. Please try again.'
             );
 
             verifyBtn.disabled = false;
             verifyBtn.textContent = 'Verify email address';
+
         }
+
     });
 
+    // ======================================
     // RESEND OTP
+    // ======================================
+
     resendBtn.addEventListener('click', async () => {
 
         if (resendBtn.disabled) return;
@@ -199,15 +299,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         showResendMessage(
             'Requesting a new verification code...',
-            'success'
+            'info'
         );
 
         try {
-            const { error } =
-                await window.jscanDB.auth.resend({
-                    type: 'signup',
-                    email: email
-                });
+
+            const { error } = await db.auth.resend({
+
+                type: 'signup',
+                email: email
+
+            });
 
             if (error) throw error;
 
@@ -218,19 +320,39 @@ document.addEventListener('DOMContentLoaded', () => {
                 'success'
             );
 
+            // Restart timers after successful resend
             startCountdown();
             startResendCooldown();
 
         } catch (error) {
-            console.error('JScan resend OTP error:', error);
 
-            showResendMessage(
-                error.message || 'Unable to resend code. Please try again.'
+            console.error(
+                'JScan resend OTP error:',
+                error
             );
 
+            showResendMessage(
+                error.message ||
+                'Unable to resend code. Please try again.'
+            );
+
+            // Restore resend button after failed request
             resendBtn.disabled = false;
             resendBtn.textContent = 'Resend code';
+
         }
+
+    });
+
+    // ======================================
+    // CLEAN UP TIMERS WHEN LEAVING
+    // ======================================
+
+    window.addEventListener('pagehide', () => {
+
+        clearInterval(countdownInterval);
+        clearInterval(resendInterval);
+
     });
 
 });
