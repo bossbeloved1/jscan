@@ -4,6 +4,8 @@
 ========================================== */
 
 document.addEventListener("DOMContentLoaded", async () => {
+    "use strict";
+
     const db = window.jscanDB;
 
     const historyList = document.getElementById("historyList");
@@ -13,24 +15,37 @@ document.addEventListener("DOMContentLoaded", async () => {
     let currentUser = null;
     let isDeleting = false;
     let isClearing = false;
-    let authSubscription = null;
 
-    function showMessage(message) {
-        if (historyStatus) {
-            historyStatus.textContent = message;
-        }
+    /* ==========================================
+       CHECK REQUIRED ELEMENTS
+    ========================================== */
+
+    if (!historyList || !historyStatus || !clearHistoryBtn) {
+        console.error("JScan: Required history page elements are missing.");
+        return;
     }
+
+    /* ==========================================
+       CHECK SUPABASE CONNECTION
+    ========================================== */
 
     if (!db) {
-        showMessage("Unable to connect to JScan. Please refresh the page.");
+        historyStatus.textContent =
+            "Unable to connect to JScan. Please refresh the page.";
         return;
     }
 
-    if (!historyList || !clearHistoryBtn) {
-        console.error("JScan: Required history page elements are missing.");
-        showMessage("Unable to load the history page. Please refresh.");
-        return;
+    /* ==========================================
+       MESSAGE HELPER
+    ========================================== */
+
+    function showMessage(message) {
+        historyStatus.textContent = message;
     }
+
+    /* ==========================================
+       DATE FORMATTER
+    ========================================== */
 
     function formatDate(date) {
         const parsedDate = new Date(date);
@@ -45,6 +60,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
 
+    /* ==========================================
+       HTML ESCAPE HELPER
+    ========================================== */
+
     function escapeHTML(value) {
         return String(value ?? "").replace(/[&<>"']/g, char => ({
             "&": "&amp;",
@@ -54,6 +73,10 @@ document.addEventListener("DOMContentLoaded", async () => {
             "'": "&#039;"
         })[char]);
     }
+
+    /* ==========================================
+       TOOL ICON HELPER
+    ========================================== */
 
     function getToolIcon(tool) {
         const name = String(tool ?? "").toLowerCase();
@@ -68,6 +91,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         return "▤";
     }
+
+    /* ==========================================
+       RENDER HISTORY
+    ========================================== */
 
     function renderHistory(records) {
         if (!records.length) {
@@ -126,6 +153,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         `).join("");
     }
 
+    /* ==========================================
+       LOAD USER HISTORY
+    ========================================== */
+
     async function loadHistory() {
         showMessage("Loading your activity history...");
 
@@ -137,24 +168,28 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         if (error) {
             console.error("History loading error:", error);
-            showMessage("Unable to load your history. Please try again.");
-            return;
+
+            showMessage(
+                "Unable to load your history. Please try again."
+            );
+
+            return false;
         }
 
         showMessage("");
         renderHistory(data || []);
+
+        return true;
     }
 
+    /* ==========================================
+       DELETE SINGLE HISTORY RECORD
+    ========================================== */
+
     async function deleteHistory(id) {
-        if (isDeleting || isClearing) return;
+        if (isDeleting) return;
 
         isDeleting = true;
-
-        const buttons = historyList.querySelectorAll(".delete-history-btn");
-
-        buttons.forEach(button => {
-            button.disabled = true;
-        });
 
         try {
             const { error } = await db
@@ -165,6 +200,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             if (error) {
                 console.error("History deletion error:", error);
+
                 alert("Unable to delete this activity.");
                 return;
             }
@@ -172,13 +208,17 @@ document.addEventListener("DOMContentLoaded", async () => {
             await loadHistory();
 
         } catch (error) {
-            console.error("Unexpected deletion error:", error);
+            console.error("Unexpected history deletion error:", error);
             alert("Something went wrong. Please try again.");
 
         } finally {
             isDeleting = false;
         }
     }
+
+    /* ==========================================
+       DELETE BUTTON EVENT
+    ========================================== */
 
     historyList.addEventListener("click", async event => {
         const button = event.target.closest(".delete-history-btn");
@@ -193,9 +233,15 @@ document.addEventListener("DOMContentLoaded", async () => {
             return;
         }
 
+        button.disabled = true;
         button.textContent = "Deleting...";
+
         await deleteHistory(id);
     });
+
+    /* ==========================================
+       CLEAR ALL HISTORY
+    ========================================== */
 
     clearHistoryBtn.addEventListener("click", async () => {
         if (isClearing || isDeleting) return;
@@ -218,6 +264,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             if (error) {
                 console.error("Clear history error:", error);
+
                 alert("Unable to clear your history.");
                 return;
             }
@@ -235,36 +282,43 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     });
 
-    // Verify the user's login session.
-    try {
-        const { data, error } = await db.auth.getSession();
+    /* ==========================================
+       VERIFY USER SESSION
+    ========================================== */
 
-        if (error || !data.session?.user) {
-            window.location.replace("/login.html");
-            return;
-        }
+    const { data, error } = await db.auth.getSession();
 
-        currentUser = data.session.user;
-
-    } catch (error) {
-        console.error("Session verification error:", error);
+    if (error || !data.session?.user) {
         window.location.replace("/login.html");
         return;
     }
 
-    // Keep the page protected when the user signs out.
-    const { data: authData } = db.auth.onAuthStateChange(event => {
-        if (event === "SIGNED_OUT") {
-            window.location.replace("/login.html");
+    currentUser = data.session.user;
+
+    /* ==========================================
+       PROTECT PAGE AFTER LOGOUT
+    ========================================== */
+
+    const { data: authListener } = db.auth.onAuthStateChange(
+        (event) => {
+            if (event === "SIGNED_OUT") {
+                window.location.replace("/login.html");
+            }
         }
-    });
+    );
 
-    authSubscription = authData?.subscription;
-
-    // Clean up the authentication listener when leaving the page.
-    window.addEventListener("pagehide", () => {
-        authSubscription?.unsubscribe();
-    }, { once: true });
+    /* ==========================================
+       INITIAL HISTORY LOAD
+    ========================================== */
 
     await loadHistory();
+
+    /* ==========================================
+       CLEAN UP AUTH LISTENER
+    ========================================== */
+
+    window.addEventListener("pagehide", () => {
+        authListener.subscription.unsubscribe();
+    }, { once: true });
+
 });
