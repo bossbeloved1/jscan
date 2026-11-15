@@ -2,6 +2,7 @@
 /* ==========================================
    JSCAN - BARCODE GENERATOR
    Colour Customization + PNG + SVG
+   Supabase Activity History Integration
 ========================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -29,11 +30,59 @@ document.addEventListener('DOMContentLoaded', () => {
     const swatches = document.getElementById('swatches');
     const contrastNote = document.getElementById('contrastNote');
 
+    const db = window.jscanDB;
+
     let barcodeGenerated = false;
     let updateTimeout;
 
+    /* ==========================================
+       SUPABASE ACTIVITY LOGGER
+    ========================================== */
 
-    // DISPLAY MESSAGE
+    async function logActivity(action, fileName, details = {}) {
+
+        if (!db) {
+            console.warn('JScan: Supabase is unavailable. Activity not recorded.');
+            return;
+        }
+
+        try {
+
+            const { data: { user }, error: userError } =
+                await db.auth.getUser();
+
+            if (userError || !user) {
+                return;
+            }
+
+            const { error } = await db
+                .from('activity_history')
+                .insert({
+                    user_id: user.id,
+                    tool_name: 'Barcode Generator',
+                    action: action,
+                    file_name: fileName,
+                    status: 'Success',
+                    details: details
+                });
+
+            if (error) {
+                console.error('Barcode activity logging error:', error);
+            }
+
+        } catch (error) {
+
+            console.error('Unexpected barcode activity error:', error);
+
+        }
+
+    }
+
+
+    /* ==========================================
+       DISPLAY MESSAGE
+    ========================================== */
+
     function showMessage(message, isError = false) {
 
         barcodeMessage.textContent = message;
@@ -45,7 +94,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
-    // CHECK HEX COLOUR
+    /* ==========================================
+       CHECK HEX COLOUR
+    ========================================== */
+
     function validHex(value) {
 
         return /^#[0-9A-Fa-f]{6}$/.test(value);
@@ -53,7 +105,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
-    // HEX TO RGB
+    /* ==========================================
+       HEX TO RGB
+    ========================================== */
+
     function hexToRgb(hex) {
 
         const clean = hex.replace('#', '');
@@ -67,7 +122,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
-    // RELATIVE LUMINANCE
+    /* ==========================================
+       RELATIVE LUMINANCE
+    ========================================== */
+
     function luminance(hex) {
 
         const rgb = hexToRgb(hex);
@@ -91,7 +149,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
-    // CONTRAST RATIO
+    /* ==========================================
+       CONTRAST RATIO
+    ========================================== */
+
     function checkContrast() {
 
         const first = luminance(fg.value);
@@ -107,8 +168,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
-    // GENERATE BARCODE
-    function generateBarcode() {
+    /* ==========================================
+       GENERATE BARCODE
+    ========================================== */
+
+    function generateBarcode(shouldLog = false) {
 
         const value = barcodeText.value.trim();
         const format = barcodeFormat.value;
@@ -236,6 +300,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
             showMessage('Barcode generated successfully!');
 
+            /* Record only deliberate generation, not live updates */
+
+            if (shouldLog) {
+
+                logActivity(
+                    'Barcode generated',
+                    `Barcode (${format})`,
+                    {
+                        format: format,
+                        foreground_color: fg.value,
+                        background_color: bg.value
+                    }
+                );
+
+            }
+
             return true;
 
         } catch (error) {
@@ -257,7 +337,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
-    // DEBOUNCED LIVE UPDATE
+    /* ==========================================
+       DEBOUNCED LIVE UPDATE
+    ========================================== */
+
     function liveUpdate() {
 
         clearTimeout(updateTimeout);
@@ -266,7 +349,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (barcodeGenerated) {
 
-                generateBarcode();
+                generateBarcode(false);
 
             } else {
 
@@ -279,7 +362,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
-    // SYNC COLOUR PICKER TO HEX
+    /* ==========================================
+       SYNC COLOUR PICKER TO HEX
+    ========================================== */
+
     fg.addEventListener('input', () => {
 
         fgHex.value = fg.value.toUpperCase();
@@ -300,7 +386,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 
-    // SYNC HEX TO COLOUR PICKER
+    /* ==========================================
+       SYNC HEX TO COLOUR PICKER
+    ========================================== */
+
     fgHex.addEventListener('input', () => {
 
         const value = fgHex.value.trim();
@@ -333,7 +422,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 
-    // VALIDATE HEX WHEN USER LEAVES INPUT
+    /* ==========================================
+       VALIDATE HEX WHEN USER LEAVES INPUT
+    ========================================== */
+
     fgHex.addEventListener('blur', () => {
 
         if (!validHex(fgHex.value.trim())) {
@@ -356,7 +448,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 
-    // UPDATE SELECTED PRESET
+    /* ==========================================
+       UPDATE SELECTED PRESET
+    ========================================== */
+
     function updateSelectedSwatch() {
 
         swatches.querySelectorAll('button').forEach(button => {
@@ -371,7 +466,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
-    // PRESET COLOUR BUTTONS
+    /* ==========================================
+       PRESET COLOUR BUTTONS
+    ========================================== */
+
     swatches.querySelectorAll('button').forEach(button => {
 
         button.addEventListener('click', () => {
@@ -391,15 +489,21 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 
-    // GENERATE BUTTON
+    /* ==========================================
+       GENERATE BUTTON
+    ========================================== */
+
     generateBtn.addEventListener('click', () => {
 
-        generateBarcode();
+        generateBarcode(true);
 
     });
 
 
-    // DOWNLOAD SVG
+    /* ==========================================
+       DOWNLOAD SVG
+    ========================================== */
+
     downloadSvgBtn.addEventListener('click', () => {
 
         if (!barcodeGenerated) {
@@ -422,6 +526,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             downloadBlob(blob, 'jscan-barcode.svg');
 
+            logActivity(
+                'Barcode downloaded (SVG)',
+                'jscan-barcode.svg',
+                {
+                    format: barcodeFormat.value,
+                    file_type: 'SVG'
+                }
+            );
+
             showMessage('SVG barcode downloaded successfully!');
 
         } catch (error) {
@@ -435,7 +548,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 
-    // DOWNLOAD PNG
+    /* ==========================================
+       DOWNLOAD PNG
+    ========================================== */
+
     downloadPngBtn.addEventListener('click', () => {
 
         if (!barcodeGenerated) {
@@ -498,6 +614,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     downloadBlob(blob, 'jscan-barcode.png');
 
+                    logActivity(
+                        'Barcode downloaded (PNG)',
+                        'jscan-barcode.png',
+                        {
+                            format: barcodeFormat.value,
+                            file_type: 'PNG'
+                        }
+                    );
+
                     showMessage('PNG barcode downloaded successfully!');
 
                 }, 'image/png');
@@ -527,7 +652,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 
-    // DOWNLOAD HELPER
+    /* ==========================================
+       DOWNLOAD HELPER
+    ========================================== */
+
     function downloadBlob(blob, filename) {
 
         const url = URL.createObjectURL(blob);
@@ -548,19 +676,25 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
-    // ENTER KEY
+    /* ==========================================
+       ENTER KEY
+    ========================================== */
+
     barcodeText.addEventListener('keydown', event => {
 
         if (event.key === 'Enter') {
 
-            generateBarcode();
+            generateBarcode(true);
 
         }
 
     });
 
 
-    // INITIAL SETTINGS
+    /* ==========================================
+       INITIAL SETTINGS
+    ========================================== */
+
     fgHex.value = fg.value.toUpperCase();
 
     bgHex.value = bg.value.toUpperCase();
