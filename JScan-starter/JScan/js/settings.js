@@ -71,8 +71,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     let currentAvatarUrl = null;
     let selectedAvatarFile = null;
     let removeAvatar = false;
-
     let currentProfileName = '';
+
+    let temporaryPreviewUrl = null;
 
 
     // ======================================
@@ -103,10 +104,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (!db) {
 
-        if (generalMessage) {
-            generalMessage.textContent =
-                'Connection error. Please refresh the page.';
-        }
+        showMessage(
+            generalMessage,
+            'Connection error. Please refresh the page.'
+        );
 
         return;
     }
@@ -130,16 +131,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         console.error('Session error:', error);
 
-        window.location.replace('login.html');
+        window.location.replace('/login.html');
 
         return;
     }
 
 
-    // Protect settings page
+    // PROTECT SETTINGS PAGE
+
     if (!session) {
 
-        window.location.replace('login.html');
+        window.location.replace('/login.html');
 
         return;
     }
@@ -172,23 +174,27 @@ document.addEventListener('DOMContentLoaded', async () => {
             currentAvatarUrl =
                 profile?.avatar_url || null;
 
-            // Display name
+            // DISPLAY NAME
+
             if (displayNameInput) {
                 displayNameInput.value = currentProfileName;
             }
 
-            // Registered email
+            // REGISTERED EMAIL
+
             if (accountEmail) {
                 accountEmail.value = currentUser.email || '';
             }
 
-            // Profile picture
+            // PROFILE PICTURE
+
             if (avatarPreview) {
 
                 avatarPreview.src =
                     currentAvatarUrl || defaultAvatar;
 
                 avatarPreview.onerror = () => {
+                    avatarPreview.onerror = null;
                     avatarPreview.src = defaultAvatar;
                 };
             }
@@ -201,7 +207,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 profileMessage,
                 'Unable to load your profile. Please refresh the page.'
             );
+
         }
+
     }
 
 
@@ -221,14 +229,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
 
-    // Preview selected image
+    // PREVIEW SELECTED IMAGE
+
     if (avatarInput) {
 
         avatarInput.addEventListener('change', () => {
 
             clearMessage(profileMessage);
 
-            const file = avatarInput.files[0];
+            const file = avatarInput.files?.[0];
 
             if (!file) return;
 
@@ -246,11 +255,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 );
 
                 avatarInput.value = '';
+                selectedAvatarFile = null;
 
                 return;
             }
 
-            // Maximum file size: 2MB
+            // MAXIMUM FILE SIZE: 2MB
+
             if (file.size > 2 * 1024 * 1024) {
 
                 showMessage(
@@ -259,6 +270,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 );
 
                 avatarInput.value = '';
+                selectedAvatarFile = null;
 
                 return;
             }
@@ -266,14 +278,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             selectedAvatarFile = file;
             removeAvatar = false;
 
-            // Preview before uploading
-            const previewUrl = URL.createObjectURL(file);
+            // CLEAN UP PREVIOUS TEMPORARY PREVIEW
+
+            if (temporaryPreviewUrl) {
+                URL.revokeObjectURL(temporaryPreviewUrl);
+            }
+
+            // CREATE NEW PREVIEW
+
+            temporaryPreviewUrl = URL.createObjectURL(file);
 
             if (avatarPreview) {
 
-                avatarPreview.src = previewUrl;
+                avatarPreview.src = temporaryPreviewUrl;
 
                 avatarPreview.onerror = () => {
+                    avatarPreview.onerror = null;
                     avatarPreview.src = defaultAvatar;
                 };
             }
@@ -302,6 +322,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (avatarInput) {
                 avatarInput.value = '';
+            }
+
+            if (temporaryPreviewUrl) {
+
+                URL.revokeObjectURL(temporaryPreviewUrl);
+                temporaryPreviewUrl = null;
+
             }
 
             if (avatarPreview) {
@@ -358,7 +385,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             clearMessage(profileMessage);
 
             const displayName =
-                displayNameInput.value.trim();
+                displayNameInput?.value.trim() || '';
 
             if (!displayName) {
 
@@ -366,6 +393,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     profileMessage,
                     'Please enter your display name.'
                 );
+
+                displayNameInput?.focus();
 
                 return;
             }
@@ -380,8 +409,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
 
+            if (!saveProfileBtn) return;
+
             saveProfileBtn.disabled = true;
             saveProfileBtn.textContent = 'Saving...';
+
+            let uploadedAvatarPath = null;
 
             try {
 
@@ -391,7 +424,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     getAvatarStoragePath(currentAvatarUrl);
 
 
-                // Upload new avatar if selected
+                // ======================================
+                // UPLOAD NEW AVATAR
+                // ======================================
+
                 if (selectedAvatarFile) {
 
                     const file = selectedAvatarFile;
@@ -417,6 +453,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     if (uploadError) throw uploadError;
 
+                    uploadedAvatarPath = filePath;
+
                     const { data: imageData } = db
                         .storage
                         .from('avatars')
@@ -426,19 +464,27 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
 
 
-                // Remove avatar if requested
+                // ======================================
+                // REMOVE AVATAR IF REQUESTED
+                // ======================================
+
                 if (removeAvatar) {
                     newAvatarUrl = null;
                 }
 
 
-                // Save profile information
+                // ======================================
+                // SAVE PROFILE INFORMATION
+                // ======================================
+
                 const { error: profileError } = await db
                     .from('profiles')
                     .upsert({
+
                         id: currentUser.id,
                         display_name: displayName,
                         avatar_url: newAvatarUrl
+
                     }, {
                         onConflict: 'id'
                     });
@@ -446,22 +492,33 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (profileError) throw profileError;
 
 
-                // Update Supabase user metadata
-                const { error: metadataError } = await db.auth.updateUser({
-                    data: {
-                        display_name: displayName
-                    }
-                });
+                // ======================================
+                // UPDATE USER METADATA
+                // ======================================
+
+                const { error: metadataError } =
+                    await db.auth.updateUser({
+
+                        data: {
+                            display_name: displayName
+                        }
+
+                    });
 
                 if (metadataError) {
+
                     console.error(
                         'User metadata update error:',
                         metadataError
                     );
+
                 }
 
 
-                // Delete old avatar after successful profile update
+                // ======================================
+                // DELETE OLD AVATAR
+                // ======================================
+
                 if (
                     oldAvatarPath &&
                     (
@@ -476,15 +533,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                         .remove([oldAvatarPath]);
 
                     if (deleteError) {
+
                         console.error(
                             'Old avatar deletion error:',
                             deleteError
                         );
+
                     }
+
                 }
 
 
-                // Update local values
+                // ======================================
+                // UPDATE LOCAL VALUES
+                // ======================================
+
                 currentProfileName = displayName;
                 currentAvatarUrl = newAvatarUrl;
 
@@ -495,9 +558,23 @@ document.addEventListener('DOMContentLoaded', async () => {
                     avatarInput.value = '';
                 }
 
+                if (temporaryPreviewUrl) {
+
+                    URL.revokeObjectURL(temporaryPreviewUrl);
+                    temporaryPreviewUrl = null;
+
+                }
+
                 if (avatarPreview) {
+
                     avatarPreview.src =
                         currentAvatarUrl || defaultAvatar;
+
+                    avatarPreview.onerror = () => {
+                        avatarPreview.onerror = null;
+                        avatarPreview.src = defaultAvatar;
+                    };
+
                 }
 
                 showMessage(
@@ -510,6 +587,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 console.error('Profile update error:', error);
 
+                // CLEAN UP NEWLY UPLOADED FILE IF PROFILE SAVE FAILED
+
+                if (uploadedAvatarPath) {
+
+                    const { error: cleanupError } = await db
+                        .storage
+                        .from('avatars')
+                        .remove([uploadedAvatarPath]);
+
+                    if (cleanupError) {
+                        console.error(
+                            'Avatar cleanup error:',
+                            cleanupError
+                        );
+                    }
+
+                }
+
                 showMessage(
                     profileMessage,
                     error.message ||
@@ -519,11 +614,30 @@ document.addEventListener('DOMContentLoaded', async () => {
             } finally {
 
                 saveProfileBtn.disabled = false;
+
                 saveProfileBtn.textContent =
                     'Save Profile Changes';
+
             }
 
         });
+
+    }
+
+
+    // ======================================
+    // PASSWORD STRENGTH VALIDATION
+    // ======================================
+
+    function validatePassword(value) {
+
+        return {
+            length: value.length >= 8,
+            upper: /[A-Z]/.test(value),
+            lower: /[a-z]/.test(value),
+            number: /[0-9]/.test(value),
+            special: /[^A-Za-z0-9]/.test(value)
+        };
 
     }
 
@@ -541,25 +655,77 @@ document.addEventListener('DOMContentLoaded', async () => {
             clearMessage(passwordMessage);
 
             const newPassword =
-                newPasswordInput.value;
+                newPasswordInput?.value || '';
 
             const confirmPassword =
-                confirmPasswordInput.value;
+                confirmPasswordInput?.value || '';
 
+            // CHECK PASSWORD REQUIREMENTS
 
-            // Validate password length
-            if (newPassword.length < 8) {
+            const checks = validatePassword(newPassword);
+
+            if (!checks.length) {
 
                 showMessage(
                     passwordMessage,
                     'Your password must contain at least 8 characters.'
                 );
 
+                newPasswordInput?.focus();
+
                 return;
             }
 
+            if (!checks.upper) {
 
-            // Confirm passwords match
+                showMessage(
+                    passwordMessage,
+                    'Add at least one uppercase letter to your password.'
+                );
+
+                newPasswordInput?.focus();
+
+                return;
+            }
+
+            if (!checks.lower) {
+
+                showMessage(
+                    passwordMessage,
+                    'Add at least one lowercase letter to your password.'
+                );
+
+                newPasswordInput?.focus();
+
+                return;
+            }
+
+            if (!checks.number) {
+
+                showMessage(
+                    passwordMessage,
+                    'Add at least one number to your password.'
+                );
+
+                newPasswordInput?.focus();
+
+                return;
+            }
+
+            if (!checks.special) {
+
+                showMessage(
+                    passwordMessage,
+                    'Add at least one special character to your password.'
+                );
+
+                newPasswordInput?.focus();
+
+                return;
+            }
+
+            // CONFIRM PASSWORD
+
             if (newPassword !== confirmPassword) {
 
                 showMessage(
@@ -567,9 +733,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                     'Your passwords do not match.'
                 );
 
+                confirmPasswordInput?.focus();
+
                 return;
             }
 
+            if (!changePasswordBtn) return;
 
             changePasswordBtn.disabled = true;
             changePasswordBtn.textContent = 'Updating...';
@@ -577,7 +746,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             try {
 
                 const { error } = await db.auth.updateUser({
+
                     password: newPassword
+
                 });
 
                 if (error) throw error;
@@ -603,8 +774,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             } finally {
 
                 changePasswordBtn.disabled = false;
+
                 changePasswordBtn.textContent =
                     'Update Password';
+
             }
 
         });
@@ -635,23 +808,38 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 if (error) throw error;
 
-                window.location.replace('login.html');
+                window.location.replace('/login.html');
 
             } catch (error) {
 
                 console.error('Logout error:', error);
 
-                if (generalMessage) {
-                    generalMessage.textContent =
-                        'Unable to log out. Please try again.';
-                }
+                showMessage(
+                    generalMessage,
+                    'Unable to log out. Please try again.'
+                );
 
                 logoutBtn.disabled = false;
                 logoutBtn.textContent = 'Log Out';
+
             }
 
         });
 
     }
+
+
+    // ======================================
+    // CLEAN UP TEMPORARY PREVIEW
+    // ======================================
+
+    window.addEventListener('pagehide', () => {
+
+        if (temporaryPreviewUrl) {
+            URL.revokeObjectURL(temporaryPreviewUrl);
+            temporaryPreviewUrl = null;
+        }
+
+    });
 
 });
