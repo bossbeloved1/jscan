@@ -23,9 +23,21 @@ document.addEventListener("DOMContentLoaded", async () => {
     let currentUser = null;
     let isDeleting = false;
     let isClearing = false;
+    let isLoading = false;
+
     let currentPreviewUrl = null;
     let currentPreviewFileName = "jscan-qr-code.png";
     let previousFocusElement = null;
+
+    /* ==========================================
+       PAGINATION SETTINGS
+    ========================================== */
+
+    const PAGE_SIZE = 10;
+
+    let currentPage = 1;
+    let totalRecords = 0;
+    let totalPages = 0;
 
     /* ==========================================
        CHECK REQUIRED ELEMENTS
@@ -58,6 +70,97 @@ document.addEventListener("DOMContentLoaded", async () => {
             "Unable to connect to JScan. Please refresh the page.";
         return;
     }
+
+    /* ==========================================
+       CREATE PAGINATION CONTAINER
+    ========================================== */
+
+    const paginationContainer = document.createElement("div");
+
+    paginationContainer.id = "historyPagination";
+    paginationContainer.className = "history-pagination";
+
+    historyList.insertAdjacentElement(
+        "afterend",
+        paginationContainer
+    );
+
+    /* ==========================================
+       PAGINATION STYLES
+    ========================================== */
+
+    const paginationStyles = document.createElement("style");
+
+    paginationStyles.textContent = `
+        .history-pagination {
+            width: 100%;
+            margin: 24px 0 35px;
+        }
+
+        .history-pagination-info {
+            text-align: center;
+            color: var(--text-secondary, #777);
+            font-size: 13px;
+            margin-bottom: 16px;
+        }
+
+        .history-pagination-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .history-page-btn {
+            min-width: 38px;
+            height: 38px;
+            padding: 0 11px;
+            border: 1px solid var(--border-color, #ddd);
+            border-radius: 8px;
+            background: var(--card-bg, transparent);
+            color: var(--text-color, inherit);
+            cursor: pointer;
+            font-size: 14px;
+            transition: 0.2s ease;
+        }
+
+        .history-page-btn:hover:not(:disabled) {
+            border-color: var(--blue, #2563eb);
+            color: var(--blue, #2563eb);
+        }
+
+        .history-page-btn.active {
+            background: var(--blue, #2563eb);
+            border-color: var(--blue, #2563eb);
+            color: #fff;
+        }
+
+        .history-page-btn:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        .history-page-ellipsis {
+            padding: 0 3px;
+            color: var(--text-secondary, #777);
+        }
+
+        @media (max-width: 480px) {
+            .history-pagination-controls {
+                gap: 5px;
+            }
+
+            .history-page-btn {
+                min-width: 34px;
+                height: 36px;
+                padding: 0 8px;
+                font-size: 13px;
+            }
+        }
+    `;
+
+    document.head.appendChild(paginationStyles);
 
     /* ==========================================
        MESSAGE HELPER
@@ -269,6 +372,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             qrPreviewImage.onload = () => {
                 qrPreviewImage.hidden = false;
                 qrPreviewLoading.hidden = true;
+                qrPreviewDownload.disabled = false;
             };
 
             qrPreviewImage.onerror = () => {
@@ -282,8 +386,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             qrPreviewImage.src = signedUrl;
 
-            qrPreviewDownload.disabled = false;
-
         } catch (error) {
             console.error("QR viewing error:", error);
 
@@ -295,32 +397,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         } finally {
             button.disabled = false;
             button.textContent = "View";
-        }
-    }
-
-    /* ==========================================
-       DOWNLOAD QR CODE
-    ========================================== */
-
-    async function downloadQrCode(imagePath, button, fileName) {
-        if (button.disabled) return;
-
-        button.disabled = true;
-        button.textContent = "Downloading...";
-
-        try {
-            const signedUrl = await getQrSignedUrl(imagePath);
-
-            await downloadFromUrl(signedUrl, fileName);
-
-        } catch (error) {
-            console.error("QR download error:", error);
-
-            alert("Unable to download this QR code. Please try again.");
-
-        } finally {
-            button.disabled = false;
-            button.textContent = "Download";
         }
     }
 
@@ -350,6 +426,32 @@ document.addEventListener("DOMContentLoaded", async () => {
         setTimeout(() => {
             URL.revokeObjectURL(objectUrl);
         }, 1500);
+    }
+
+    /* ==========================================
+       DOWNLOAD QR CODE
+    ========================================== */
+
+    async function downloadQrCode(imagePath, button, fileName) {
+        if (button.disabled) return;
+
+        button.disabled = true;
+        button.textContent = "Downloading...";
+
+        try {
+            const signedUrl = await getQrSignedUrl(imagePath);
+
+            await downloadFromUrl(signedUrl, fileName);
+
+        } catch (error) {
+            console.error("QR download error:", error);
+
+            alert("Unable to download this QR code. Please try again.");
+
+        } finally {
+            button.disabled = false;
+            button.textContent = "Download";
+        }
     }
 
     /* ==========================================
@@ -398,6 +500,132 @@ document.addEventListener("DOMContentLoaded", async () => {
         ) {
             closePreview();
         }
+    });
+
+    /* ==========================================
+       PAGINATION PAGE NUMBERS
+    ========================================== */
+
+    function getPageNumbers() {
+        const pages = new Set();
+
+        pages.add(1);
+        pages.add(totalPages);
+
+        for (
+            let page = Math.max(1, currentPage - 2);
+            page <= Math.min(totalPages, currentPage + 2);
+            page++
+        ) {
+            pages.add(page);
+        }
+
+        return [...pages].sort((a, b) => a - b);
+    }
+
+    /* ==========================================
+       RENDER PAGINATION
+    ========================================== */
+
+    function renderPagination() {
+        if (totalRecords === 0) {
+            paginationContainer.innerHTML = "";
+            paginationContainer.hidden = true;
+            return;
+        }
+
+        paginationContainer.hidden = false;
+
+        const firstRecord = ((currentPage - 1) * PAGE_SIZE) + 1;
+        const lastRecord = Math.min(
+            currentPage * PAGE_SIZE,
+            totalRecords
+        );
+
+        let controlsHTML = "";
+
+        if (totalPages > 1) {
+            controlsHTML += `
+                <button
+                    type="button"
+                    class="history-page-btn"
+                    data-page="${currentPage - 1}"
+                    ${currentPage === 1 ? "disabled" : ""}>
+                    Previous
+                </button>
+            `;
+
+            const pages = getPageNumbers();
+            let previousPage = 0;
+
+            pages.forEach(page => {
+                if (previousPage && page - previousPage > 1) {
+                    controlsHTML += `
+                        <span class="history-page-ellipsis">...</span>
+                    `;
+                }
+
+                controlsHTML += `
+                    <button
+                        type="button"
+                        class="history-page-btn ${page === currentPage ? "active" : ""}"
+                        data-page="${page}"
+                        ${page === currentPage ? 'aria-current="page"' : ""}>
+                        ${page}
+                    </button>
+                `;
+
+                previousPage = page;
+            });
+
+            controlsHTML += `
+                <button
+                    type="button"
+                    class="history-page-btn"
+                    data-page="${currentPage + 1}"
+                    ${currentPage === totalPages ? "disabled" : ""}>
+                    Next
+                </button>
+            `;
+        }
+
+        paginationContainer.innerHTML = `
+            <div class="history-pagination-info">
+                Showing ${firstRecord}–${lastRecord} of
+                ${totalRecords} activities
+            </div>
+
+            <div class="history-pagination-controls">
+                ${controlsHTML}
+            </div>
+        `;
+    }
+
+    /* ==========================================
+       PAGINATION BUTTON EVENTS
+    ========================================== */
+
+    paginationContainer.addEventListener("click", async event => {
+        const button = event.target.closest("[data-page]");
+
+        if (!button || button.disabled || isLoading || isDeleting || isClearing) {
+            return;
+        }
+
+        const requestedPage = Number(button.dataset.page);
+
+        if (
+            !Number.isInteger(requestedPage) ||
+            requestedPage < 1 ||
+            requestedPage > totalPages ||
+            requestedPage === currentPage
+        ) {
+            return;
+        }
+
+        currentPage = requestedPage;
+
+        await loadHistory();
     });
 
     /* ==========================================
@@ -493,32 +721,72 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     /* ==========================================
-       LOAD USER HISTORY
+       LOAD USER HISTORY - SERVER PAGINATION
     ========================================== */
 
     async function loadHistory() {
+        if (isLoading) return false;
+
+        isLoading = true;
         showMessage("Loading your activity history...");
 
-        const { data, error } = await db
-            .from("activity_history")
-            .select("*")
-            .eq("user_id", currentUser.id)
-            .order("created_at", { ascending: false });
+        try {
+            const from = (currentPage - 1) * PAGE_SIZE;
+            const to = from + PAGE_SIZE - 1;
 
-        if (error) {
-            console.error("History loading error:", error);
+            const { data, error, count } = await db
+                .from("activity_history")
+                .select("*", { count: "exact" })
+                .eq("user_id", currentUser.id)
+                .order("created_at", { ascending: false })
+                .range(from, to);
+
+            if (error) {
+                console.error("History loading error:", error);
+
+                showMessage(
+                    "Unable to load your history. Please try again."
+                );
+
+                return false;
+            }
+
+            totalRecords = count || 0;
+            totalPages = Math.ceil(totalRecords / PAGE_SIZE);
+
+            /* Handle a page that no longer exists after deletion */
+
+            if (totalPages > 0 && currentPage > totalPages) {
+                currentPage = totalPages;
+
+                isLoading = false;
+
+                return await loadHistory();
+            }
+
+            if (totalPages === 0) {
+                currentPage = 1;
+            }
+
+            renderHistory(data || []);
+            renderPagination();
+
+            showMessage("");
+
+            return true;
+
+        } catch (error) {
+            console.error("Unexpected history loading error:", error);
 
             showMessage(
-                "Unable to load your history. Please try again."
+                "Something went wrong while loading your history."
             );
 
             return false;
+
+        } finally {
+            isLoading = false;
         }
-
-        showMessage("");
-        renderHistory(data || []);
-
-        return true;
     }
 
     /* ==========================================
@@ -576,7 +844,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const deleteButton = event.target.closest(".delete-history-btn");
 
         if (viewButton) {
-            if (isDeleting || isClearing) return;
+            if (isDeleting || isClearing || isLoading) return;
 
             const imagePath = viewButton.dataset.imagePath;
             const fileName = viewButton.dataset.fileName;
@@ -589,7 +857,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         if (downloadButton) {
-            if (isDeleting || isClearing) return;
+            if (isDeleting || isClearing || isLoading) return;
 
             const imagePath = downloadButton.dataset.imagePath;
             const fileName = downloadButton.dataset.fileName;
@@ -605,7 +873,9 @@ document.addEventListener("DOMContentLoaded", async () => {
             return;
         }
 
-        if (!deleteButton || isDeleting || isClearing) return;
+        if (!deleteButton || isDeleting || isClearing || isLoading) {
+            return;
+        }
 
         const id = deleteButton.dataset.id;
 
@@ -626,7 +896,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     ========================================== */
 
     clearHistoryBtn.addEventListener("click", async () => {
-        if (isClearing || isDeleting) return;
+        if (isClearing || isDeleting || isLoading) return;
 
         if (!confirm(
             "Are you sure you want to clear your entire activity history?"
@@ -656,6 +926,8 @@ document.addEventListener("DOMContentLoaded", async () => {
                     "No activity records were deleted. Please check your database permissions."
                 );
             }
+
+            currentPage = 1;
 
             await loadHistory();
 
