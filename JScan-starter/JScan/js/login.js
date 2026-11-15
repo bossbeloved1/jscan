@@ -28,7 +28,6 @@ document.addEventListener('DOMContentLoaded', () => {
             '#ef4444';
     }
 
-
     // ======================================
     // CHECK SUPABASE CONNECTION
     // ======================================
@@ -47,7 +46,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-
     // ======================================
     // USER LOGIN
     // ======================================
@@ -58,8 +56,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             event.preventDefault();
 
-            const email = emailInput.value.trim();
-            const password = passwordInput.value;
+            const email = emailInput?.value.trim() || '';
+            const password = passwordInput?.value || '';
 
             if (!email || !password) {
 
@@ -70,8 +68,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            loginBtn.disabled = true;
-            loginBtn.textContent = 'Logging in...';
+            if (loginBtn) {
+                loginBtn.disabled = true;
+                loginBtn.textContent = 'Logging in...';
+            }
 
             showMessage(
                 'Verifying your account...',
@@ -101,7 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     'success'
                 );
 
-                window.location.replace('dashboard.html');
+                window.location.replace('/dashboard.html');
 
             } catch (error) {
 
@@ -137,15 +137,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 }
 
-                loginBtn.disabled = false;
-                loginBtn.textContent = 'Log in to JScan';
+                if (loginBtn) {
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = 'Log in to JScan';
+                }
 
             }
 
         });
 
     }
-
 
     // ======================================
     // FORGOT PASSWORD
@@ -155,7 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         forgotPasswordBtn.addEventListener('click', async () => {
 
-            const email = emailInput.value.trim();
+            const email = emailInput?.value.trim() || '';
 
             if (!email) {
 
@@ -163,7 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     'Enter your email address first, then click Forgot password.'
                 );
 
-                emailInput.focus();
+                emailInput?.focus();
 
                 return;
             }
@@ -178,21 +179,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
             try {
 
-                // EXPLICIT JSCAN RESET PAGE URL
+                // JSCAN PRODUCTION RESET PAGE
 
                 const resetURL = new URL(
                     '/reset-password.html',
                     window.location.origin
                 ).toString();
 
-
                 // SEND SUPABASE PASSWORD RECOVERY EMAIL
 
                 const { error } =
                     await db.auth.resetPasswordForEmail(email, {
-
                         redirectTo: resetURL
-
                     });
 
                 if (error) throw error;
