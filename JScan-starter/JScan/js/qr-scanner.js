@@ -1,5 +1,10 @@
 
-document.addEventListener('DOMContentLoaded', () => {
+/* ==========================================
+   JSCAN - QR & BARCODE SCANNER
+   CAMERA + IMAGE UPLOAD + SUPABASE HISTORY
+========================================== */
+
+function initializeQrScanner() {
 
     'use strict';
 
@@ -19,7 +24,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const copyBtn = document.getElementById('copyResultBtn');
     const openBtn = document.getElementById('openResultBtn');
 
-    if (!startBtn || !stopBtn || !reader || !imageInput) {
+    if (
+        !startBtn || !stopBtn || !reader ||
+        !imageInput || !resultBox || !resultText || !preview
+    ) {
         console.error('JScan: Required scanner elements are missing.');
         return;
     }
@@ -44,18 +52,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function resetResult() {
 
-        if (resultBox) resultBox.hidden = true;
-        if (resultText) resultText.textContent = '';
+        resultBox.hidden = true;
+        resultText.textContent = '';
 
         if (openBtn) {
             openBtn.hidden = true;
             openBtn.removeAttribute('href');
         }
 
-        if (preview) {
-            preview.hidden = true;
-            preview.removeAttribute('src');
-        }
+        preview.hidden = true;
+        preview.removeAttribute('src');
 
         if (imagePreviewUrl) {
             URL.revokeObjectURL(imagePreviewUrl);
@@ -144,22 +150,24 @@ document.addEventListener('DOMContentLoaded', () => {
         resultText.textContent = decodedText;
         resultBox.hidden = false;
 
-        try {
+        if (openBtn) {
+            try {
 
-            const parsedUrl = new URL(decodedText);
+                const parsedUrl = new URL(decodedText);
 
-            if (
-                parsedUrl.protocol === 'https:' ||
-                parsedUrl.protocol === 'http:'
-            ) {
-                openBtn.href = parsedUrl.href;
-                openBtn.hidden = false;
-            } else {
+                if (
+                    parsedUrl.protocol === 'https:' ||
+                    parsedUrl.protocol === 'http:'
+                ) {
+                    openBtn.href = parsedUrl.href;
+                    openBtn.hidden = false;
+                } else {
+                    openBtn.hidden = true;
+                }
+
+            } catch {
                 openBtn.hidden = true;
             }
-
-        } catch {
-            openBtn.hidden = true;
         }
 
         saveScanToHistory(decodedText, source);
@@ -303,8 +311,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
 
     imageInput.addEventListener('change', async () => {
+
         console.log('JScan: Image upload event fired.');
-alert('Image selected successfully!');
 
         const file = imageInput.files?.[0];
 
@@ -346,7 +354,6 @@ alert('Image selected successfully!');
             uploadFileName.textContent = file.name;
         }
 
-        // Display uploaded image immediately.
         imagePreviewUrl = URL.createObjectURL(file);
 
         preview.src = imagePreviewUrl;
@@ -356,12 +363,9 @@ alert('Image selected successfully!');
 
         showMessage('Reading uploaded image...');
 
-        // Use a separate temporary scanner element.
         const temporaryReader = document.createElement('div');
 
-        temporaryReader.id =
-            'jscan-image-reader-' + Date.now();
-
+        temporaryReader.id = 'jscan-image-reader-' + Date.now();
         temporaryReader.style.display = 'none';
 
         document.body.appendChild(temporaryReader);
@@ -372,10 +376,7 @@ alert('Image selected successfully!');
 
             imageScanner = new Html5Qrcode(temporaryReader.id);
 
-            const decodedText = await imageScanner.scanFile(
-                file,
-                false
-            );
+            const decodedText = await imageScanner.scanFile(file, false);
 
             if (decodedText) {
 
@@ -452,5 +453,24 @@ alert('Image selected successfully!');
     resultBox.hidden = true;
 
     console.log('JScan QR scanner initialized successfully.');
+}
 
-});
+// ==========================================
+// INITIALIZATION FIX
+// Works whether the script loads before
+// or after DOMContentLoaded.
+// ==========================================
+
+if (document.readyState === 'loading') {
+
+    document.addEventListener(
+        'DOMContentLoaded',
+        initializeQrScanner,
+        { once: true }
+    );
+
+} else {
+
+    initializeQrScanner();
+
+}
