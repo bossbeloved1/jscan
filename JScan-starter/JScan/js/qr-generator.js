@@ -1,5 +1,7 @@
 
 (() => {
+    'use strict';
+
     const $ = id => document.getElementById(id);
 
     // ==========================================
@@ -85,7 +87,54 @@
     }
 
     // ==========================================
-    // 3. LOGO UPLOAD
+    // 3. ACTIVITY HISTORY LOGGER
+    // ==========================================
+
+    async function logActivity(action, fileName = null, details = {}) {
+        try {
+            const db = window.jscanDB;
+
+            if (!db) {
+                console.warn('JScan: Activity logging unavailable. Supabase not connected.');
+                return;
+            }
+
+            const { data, error: sessionError } =
+                await db.auth.getSession();
+
+            if (sessionError) {
+                console.error('Activity session error:', sessionError);
+                return;
+            }
+
+            const user = data.session?.user;
+
+            // Do not record guest activities.
+            if (!user) return;
+
+            const { error } = await db
+                .from('activity_history')
+                .insert([{
+                    user_id: user.id,
+                    tool_name: 'QR Code Generator',
+                    action: action,
+                    file_name: fileName,
+                    status: 'Completed',
+                    details: details
+                }]);
+
+            if (error) {
+                console.error('Activity logging error:', error);
+            }
+
+        } catch (error) {
+            // Activity logging must never interrupt the QR tool.
+            console.error('Unexpected activity logging error:', error);
+        }
+    }
+
+    // ==========================================
+    // 4. LOGO UPLOAD
     // ==========================================
 
     if (logoInput) {
@@ -161,7 +210,7 @@
     }
 
     // ==========================================
-    // 4. LOGO SIZE CONTROL
+    // 5. LOGO SIZE CONTROL
     // ==========================================
 
     if (logoSize) {
@@ -172,7 +221,7 @@
     }
 
     // ==========================================
-    // 5. REMOVE LOGO
+    // 6. REMOVE LOGO
     // ==========================================
 
     if (removeLogo) {
@@ -202,7 +251,7 @@
     }
 
     // ==========================================
-    // 6. DRAW LOGO ON QR CANVAS
+    // 7. DRAW LOGO ON QR CANVAS
     // ==========================================
 
     function drawLogo(canvas) {
@@ -268,7 +317,7 @@
     }
 
     // ==========================================
-    // 7. QR GENERATION
+    // 8. QR GENERATION
     // ==========================================
 
     function update() {
@@ -333,7 +382,7 @@
     }
 
     // ==========================================
-    // 8. UPDATE DEBOUNCE
+    // 9. UPDATE DEBOUNCE
     // ==========================================
 
     function schedule() {
@@ -342,7 +391,7 @@
     }
 
     // ==========================================
-    // 9. COLOUR PICKER EVENTS
+    // 10. COLOUR PICKER EVENTS
     // ==========================================
 
     fg.addEventListener('input', () => {
@@ -356,7 +405,7 @@
     });
 
     // ==========================================
-    // 10. HEX COLOUR INPUTS
+    // 11. HEX COLOUR INPUTS
     // ==========================================
 
     fgHex.addEventListener('input', () => {
@@ -374,17 +423,33 @@
     });
 
     // ==========================================
-    // 11. CONTENT AND SIZE EVENTS
+    // 12. CONTENT AND SIZE EVENTS
     // ==========================================
 
     text.addEventListener('input', schedule);
 
     size.addEventListener('change', schedule);
 
-    generateBtn.addEventListener('click', update);
+    // Log only when the user explicitly clicks Generate.
+    generateBtn.addEventListener('click', async () => {
+        update();
+
+        if (!text.value.trim() || !getCanvas()) return;
+
+        await logActivity(
+            'QR code generated',
+            null,
+            {
+                size: Number(size.value),
+                foreground_color: fg.value.toUpperCase(),
+                background_color: bg.value.toUpperCase(),
+                logo_used: Boolean(uploadedLogo && logoReady)
+            }
+        );
+    });
 
     // ==========================================
-    // 12. POPULAR COLOUR PRESETS
+    // 13. POPULAR COLOUR PRESETS
     // ==========================================
 
     $('swatches').addEventListener('click', event => {
@@ -405,7 +470,7 @@
     });
 
     // ==========================================
-    // 13. GET GENERATED QR CANVAS
+    // 14. GET GENERATED QR CANVAS
     // ==========================================
 
     function getCanvas() {
@@ -413,7 +478,7 @@
     }
 
     // ==========================================
-    // 14. CREATE PNG BLOB
+    // 15. CREATE PNG BLOB
     // ==========================================
 
     function createQrImageBlob(canvas) {
@@ -430,10 +495,10 @@
     }
 
     // ==========================================
-    // 15. DOWNLOAD PNG
+    // 16. DOWNLOAD PNG
     // ==========================================
 
-    downloadPng.addEventListener('click', () => {
+    downloadPng.addEventListener('click', async () => {
         const canvas = getCanvas();
 
         if (!canvas) {
@@ -454,19 +519,31 @@
 
         ctx.drawImage(canvas, 0, 0, dimension, dimension);
 
+        const fileName = 'jscan-qr-code.png';
+
         const link = document.createElement('a');
 
-        link.download = 'jscan-qr-code.png';
+        link.download = fileName;
         link.href = output.toDataURL('image/png');
 
         link.click();
+
+        await logActivity(
+            'QR code downloaded as PNG',
+            fileName,
+            {
+                size: dimension,
+                foreground_color: fg.value.toUpperCase(),
+                background_color: bg.value.toUpperCase()
+            }
+        );
     });
 
     // ==========================================
-    // 16. DOWNLOAD SVG
+    // 17. DOWNLOAD SVG
     // ==========================================
 
-    downloadSvg.addEventListener('click', () => {
+    downloadSvg.addEventListener('click', async () => {
         const canvas = getCanvas();
 
         if (!canvas) {
@@ -507,20 +584,32 @@
 
         const url = URL.createObjectURL(blob);
 
+        const fileName = 'jscan-qr-code.svg';
+
         const link = document.createElement('a');
 
         link.href = url;
-        link.download = 'jscan-qr-code.svg';
+        link.download = fileName;
 
         link.click();
 
         setTimeout(() => {
             URL.revokeObjectURL(url);
         }, 1000);
+
+        await logActivity(
+            'QR code downloaded as SVG',
+            fileName,
+            {
+                size: dimension,
+                foreground_color: fg.value.toUpperCase(),
+                background_color: bg.value.toUpperCase()
+            }
+        );
     });
 
     // ==========================================
-    // 17. SAVE QR CODE AND IMAGE TO SUPABASE
+    // 18. SAVE QR CODE AND IMAGE TO SUPABASE
     // ==========================================
 
     if (saveQrCode) {
@@ -602,7 +691,6 @@
 
                 const fileName = `${uniqueId}.png`;
 
-                // Store each user's images inside their own folder.
                 const imagePath = `${user.id}/${fileName}`;
 
                 // ----------------------------------
@@ -653,7 +741,23 @@
                 if (saveError) throw saveError;
 
                 // ----------------------------------
-                // G. SUCCESS
+                // G. RECORD ACTIVITY
+                // ----------------------------------
+
+                await logActivity(
+                    'QR code saved to account',
+                    fileName,
+                    {
+                        title: qrData.title,
+                        size: qrData.size,
+                        foreground_color: qrData.foreground_color,
+                        background_color: qrData.background_color,
+                        image_path: imagePath
+                    }
+                );
+
+                // ----------------------------------
+                // H. SUCCESS
                 // ----------------------------------
 
                 showSaveMessage(
@@ -666,7 +770,7 @@
                 console.error('QR save error:', error);
 
                 // ----------------------------------
-                // H. CLEAN UP IMAGE IF DATABASE SAVE FAILED
+                // I. CLEAN UP IMAGE IF DATABASE SAVE FAILED
                 // ----------------------------------
 
                 if (uploadedImagePath) {
@@ -701,7 +805,7 @@
     }
 
     // ==========================================
-    // 18. INITIALIZE
+    // 19. INITIALIZE
     // ==========================================
 
     update();
