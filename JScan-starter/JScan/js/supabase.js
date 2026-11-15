@@ -3,17 +3,43 @@
    JSCAN SUPABASE CONFIGURATION
 ===================================== */
 
-const JSCAN_SUPABASE_URL =
-    'https://kxrdrhbfvdbietvtnxbc.supabase.co';
+(() => {
+    'use strict';
 
-const JSCAN_SUPABASE_ANON_KEY =
-    'sb_publishable_5RDCBtbyum6wdcvR2mQe5g_sbREnXDz';
+    // Production Supabase project
+    const JSCAN_SUPABASE_URL =
+        'https://kxrdrhbfvdbietvtnxbc.supabase.co';
 
-const jscanDB = window.supabase.createClient(
-    JSCAN_SUPABASE_URL,
-    JSCAN_SUPABASE_ANON_KEY
-);
+    // Supabase publishable key
+    const JSCAN_SUPABASE_ANON_KEY =
+        'sb_publishable_5RDCBtbyum6wdcvR2mQe5g_sbREnXDz';
 
-window.jscanDB = jscanDB;
+    // Check Supabase library
+    if (!window.supabase || !window.supabase.createClient) {
+        console.error(
+            'JScan: Supabase library failed to load.'
+        );
+        return;
+    }
 
-console.log('JScan Supabase initialized successfully.');
+    // Prevent duplicate initialization
+    if (window.jscanDB) {
+        console.warn(
+            'JScan: Supabase is already initialized.'
+        );
+        return;
+    }
+
+    // Initialize Supabase
+    const jscanDB = window.supabase.createClient(
+        JSCAN_SUPABASE_URL,
+        JSCAN_SUPABASE_ANON_KEY
+    );
+
+    // Make client available across JScan scripts
+    window.jscanDB = jscanDB;
+
+    console.log(
+        'JScan Supabase initialized successfully.'
+    );
+})();
