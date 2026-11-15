@@ -285,17 +285,60 @@
 <!-- 2. SUPABASE CONFIGURATION -->
 <script src="js/supabase.js"></script>
 
-<!-- 3. AUTHENTICATION -->
-<script src="js/auth.js"></script>
-
-<!-- 4. QR SCANNER LIBRARY -->
+<!-- 3. QR SCANNER LIBRARY -->
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
-<!-- 5. MAIN WEBSITE JAVASCRIPT -->
+<!-- 4. MAIN WEBSITE JAVASCRIPT -->
 <script src="js/main.js"></script>
 
-<!-- 6. QR SCANNER FUNCTIONALITY -->
-<script src="js/qr-scanner.js"></script>
+<!-- 5. WAIT FOR SUPABASE AUTHENTICATION BEFORE LOADING SCANNER -->
+<script>
+(function waitForJScan() {
+    let attempts = 0;
+
+    const maxAttempts = 100;
+
+    const timer = setInterval(function () {
+        attempts++;
+
+        if (
+            window.jscanDB &&
+            window.jscanDB.auth
+        ) {
+            clearInterval(timer);
+
+            const scannerScript = document.createElement('script');
+
+            scannerScript.src = 'js/qr-scanner.js';
+
+            scannerScript.onerror = function () {
+                console.error('JScan: Unable to load QR scanner script.');
+            };
+
+            document.body.appendChild(scannerScript);
+
+            return;
+        }
+
+        if (attempts >= maxAttempts) {
+            clearInterval(timer);
+
+            const message = document.getElementById('scannerMessage');
+
+            if (message) {
+                message.textContent =
+                    'Unable to connect to JScan. Please refresh the page and try again.';
+            }
+
+            console.error(
+                'JScan: Supabase initialization timed out.'
+            );
+        }
+
+    }, 100);
+
+})();
+</script>
 
 </body>
 </html>
