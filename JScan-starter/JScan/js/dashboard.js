@@ -1,9 +1,17 @@
 
+/* ==========================================
+   JSCAN - USER DASHBOARD
+   AUTHENTICATION & PROFILE MANAGEMENT
+========================================== */
+
 document.addEventListener('DOMContentLoaded', async () => {
 
     const db = window.jscanDB;
 
-    // Dashboard elements
+    // ======================================
+    // DASHBOARD ELEMENTS
+    // ======================================
+
     const userName = document.getElementById('userName');
     const dashboardProfileName = document.getElementById('dashboardProfileName');
     const dashboardProfileEmail = document.getElementById('dashboardProfileEmail');
@@ -11,11 +19,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     const dashboardMessage = document.getElementById('dashboardMessage');
     const logoutBtn = document.getElementById('logoutBtn');
 
-    // Default profile picture
+    // ======================================
+    // DEFAULT PROFILE PICTURE
+    // ======================================
+
     const defaultAvatar =
         'https://placehold.co/160x160/eaf0ff/2563eb?text=J';
 
-    // Display messages
+    // ======================================
+    // DISPLAY MESSAGES
+    // ======================================
+
     function showMessage(message, type = 'error') {
 
         if (!dashboardMessage) return;
@@ -23,11 +37,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         dashboardMessage.textContent = message;
 
         dashboardMessage.style.color =
-            type === 'success' ? '#16a34a' : '#ef4444';
+            type === 'success' ? '#16a34a' :
+            type === 'info' ? 'var(--blue)' :
+            '#ef4444';
     }
 
-    // Check Supabase connection
+    // ======================================
+    // CHECK SUPABASE CONNECTION
+    // ======================================
+
     if (!db) {
+
+        console.error('JScan: Supabase connection unavailable.');
 
         showMessage(
             'Connection error. Please refresh the page.'
@@ -36,7 +57,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // Check login session
+    // ======================================
+    // CHECK LOGIN SESSION
+    // ======================================
+
     let session;
 
     try {
@@ -49,32 +73,42 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     } catch (error) {
 
-        console.error('Session error:', error);
+        console.error('JScan session error:', error);
 
-        window.location.replace('login.html');
+        window.location.replace('/login.html');
 
         return;
     }
 
-    // Protect dashboard
+    // ======================================
+    // PROTECT DASHBOARD
+    // ======================================
+
     if (!session) {
 
-        window.location.replace('login.html');
+        window.location.replace('/login.html');
 
         return;
     }
 
     const user = session.user;
 
-    // Fallback account information
+    // ======================================
+    // FALLBACK ACCOUNT INFORMATION
+    // ======================================
+
     const fallbackName =
         user.user_metadata?.display_name ||
+        user.user_metadata?.full_name ||
         user.email?.split('@')[0] ||
         'User';
 
     const userEmail = user.email || '';
 
-    // Display fallback information immediately
+    // ======================================
+    // DISPLAY FALLBACK INFORMATION
+    // ======================================
+
     if (userName) {
         userName.textContent = fallbackName;
     }
@@ -88,15 +122,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (dashboardAvatar) {
+
         dashboardAvatar.src =
             user.user_metadata?.avatar_url || defaultAvatar;
 
         dashboardAvatar.onerror = () => {
+            dashboardAvatar.onerror = null;
             dashboardAvatar.src = defaultAvatar;
         };
     }
 
-    // Load user profile from Supabase
+    // ======================================
+    // LOAD USER PROFILE FROM SUPABASE
+    // ======================================
+
     async function loadProfile() {
 
         try {
@@ -109,31 +148,32 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (error) throw error;
 
-            if (profile) {
+            if (!profile) return;
 
-                // Display name
-                const name =
-                    profile.display_name || fallbackName;
+            // DISPLAY NAME
 
-                if (userName) {
-                    userName.textContent = name;
-                }
+            const name =
+                profile.display_name || fallbackName;
 
-                if (dashboardProfileName) {
-                    dashboardProfileName.textContent = name;
-                }
+            if (userName) {
+                userName.textContent = name;
+            }
 
-                // Profile picture
-                if (dashboardAvatar) {
+            if (dashboardProfileName) {
+                dashboardProfileName.textContent = name;
+            }
 
-                    dashboardAvatar.src =
-                        profile.avatar_url || defaultAvatar;
+            // PROFILE PICTURE
 
-                    dashboardAvatar.onerror = () => {
-                        dashboardAvatar.src = defaultAvatar;
-                    };
-                }
+            if (dashboardAvatar) {
 
+                dashboardAvatar.src =
+                    profile.avatar_url || defaultAvatar;
+
+                dashboardAvatar.onerror = () => {
+                    dashboardAvatar.onerror = null;
+                    dashboardAvatar.src = defaultAvatar;
+                };
             }
 
         } catch (error) {
@@ -143,10 +183,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             showMessage(
                 'Unable to load some profile information.'
             );
+
         }
+
     }
 
-    // Log out
+    // ======================================
+    // LOG OUT
+    // ======================================
+
     if (logoutBtn) {
 
         logoutBtn.addEventListener('click', async () => {
@@ -160,11 +205,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 if (error) throw error;
 
-                window.location.replace('login.html');
+                window.location.replace('/login.html');
 
             } catch (error) {
 
-                console.error('Logout error:', error);
+                console.error('JScan logout error:', error);
 
                 showMessage(
                     'Unable to log out. Please try again.'
@@ -172,12 +217,31 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 logoutBtn.disabled = false;
                 logoutBtn.textContent = 'Log out';
+
             }
 
         });
+
     }
 
-    // Load dashboard profile
+    // ======================================
+    // HANDLE AUTHENTICATION CHANGES
+    // ======================================
+
+    db.auth.onAuthStateChange((event, updatedSession) => {
+
+        if (event === 'SIGNED_OUT' || !updatedSession) {
+
+            window.location.replace('/login.html');
+
+        }
+
+    });
+
+    // ======================================
+    // LOAD DASHBOARD PROFILE
+    // ======================================
+
     await loadProfile();
 
 });
