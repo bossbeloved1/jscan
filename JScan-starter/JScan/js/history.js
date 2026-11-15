@@ -75,6 +75,42 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     /* ==========================================
+       GET ACTIVITY DETAILS
+    ========================================== */
+
+    function getDetails(record) {
+        let details = record.details;
+
+        if (typeof details === "string") {
+            try {
+                details = JSON.parse(details);
+            } catch (error) {
+                console.error("Unable to parse activity details:", error);
+                return {};
+            }
+        }
+
+        return details && typeof details === "object"
+            ? details
+            : {};
+    }
+
+    /* ==========================================
+       GET DISPLAY NAME
+    ========================================== */
+
+    function getDisplayName(record) {
+        const toolName = String(record.tool_name || "").toLowerCase();
+        const details = getDetails(record);
+
+        if (toolName.includes("qr")) {
+            return details.title || record.file_name || "";
+        }
+
+        return record.file_name || "";
+    }
+
+    /* ==========================================
        TOOL ICON HELPER
     ========================================== */
 
@@ -104,21 +140,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             return null;
         }
 
-        let details = record.details;
-
-        // Handle JSON details returned as a string.
-        if (typeof details === "string") {
-            try {
-                details = JSON.parse(details);
-            } catch {
-                return null;
-            }
-        }
-
-        if (!details || typeof details !== "object") {
-            return null;
-        }
-
+        const details = getDetails(record);
         const imagePath = details.image_path;
 
         if (
@@ -130,7 +152,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             return null;
         }
 
-        // Ensure the image belongs to the logged-in user.
         if (!imagePath.startsWith(`${currentUser.id}/`)) {
             return null;
         }
@@ -167,7 +188,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     async function viewQrCode(imagePath, button) {
         if (button.disabled) return;
 
-        // Open a blank tab immediately to avoid popup blocking.
         const previewWindow = window.open("about:blank", "_blank");
 
         if (!previewWindow) {
@@ -182,7 +202,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         try {
             const signedUrl = await getQrSignedUrl(imagePath);
-
             previewWindow.location.href = signedUrl;
 
         } catch (error) {
@@ -190,9 +209,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             previewWindow.close();
 
-            alert(
-                "Unable to open this QR code. Please try again."
-            );
+            alert("Unable to open this QR code. Please try again.");
 
         } finally {
             button.disabled = false;
@@ -212,7 +229,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         try {
             const signedUrl = await getQrSignedUrl(imagePath);
-
             const response = await fetch(signedUrl);
 
             if (!response.ok) {
@@ -220,7 +236,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
 
             const imageBlob = await response.blob();
-
             const objectUrl = URL.createObjectURL(imageBlob);
 
             const link = document.createElement("a");
@@ -239,9 +254,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         } catch (error) {
             console.error("QR download error:", error);
 
-            alert(
-                "Unable to download this QR code. Please try again."
-            );
+            alert("Unable to download this QR code. Please try again.");
 
         } finally {
             button.disabled = false;
@@ -274,8 +287,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         historyList.innerHTML = records.map(record => {
             const imagePath = getQrImagePath(record);
+            const displayName = getDisplayName(record);
 
-            const fileName = record.file_name || "jscan-qr-code.png";
+            const downloadFileName = displayName
+                ? `${displayName.replace(/[\\/:*?"<>|]/g, "_")}.png`
+                : "jscan-qr-code.png";
 
             return `
                 <article class="panel history-item"
@@ -290,9 +306,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
                         <p>${escapeHTML(record.action)}</p>
 
-                        ${record.file_name ? `
+                        ${displayName ? `
                             <p class="history-file-name">
-                                ${escapeHTML(record.file_name)}
+                                ${escapeHTML(displayName)}
                             </p>
                         ` : ""}
 
@@ -304,7 +320,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                     <div class="history-item-actions">
 
                         <span class="history-status">
-                            ${escapeHTML(record.status)}
+                            ${escapeHTML(record.status || "")}
                         </span>
 
                         ${imagePath ? `
@@ -319,7 +335,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                                 type="button"
                                 class="btn btn-ghost download-qr-btn"
                                 data-image-path="${escapeHTML(imagePath)}"
-                                data-file-name="${escapeHTML(fileName)}">
+                                data-file-name="${escapeHTML(downloadFileName)}">
                                 Download
                             </button>
                         ` : ""}
@@ -376,16 +392,33 @@ document.addEventListener("DOMContentLoaded", async () => {
         isDeleting = true;
 
         try {
-            const { error } = await db
+            const { data, error } = await db
                 .from("activity_history")
                 .delete()
                 .eq("id", id)
-                .eq("user_id", currentUser.id);
+                .eq("user_id", currentUser.id)
+                .select("id");
 
             if (error) {
                 console.error("History deletion error:", error);
 
-                alert("Unable to delete this activity.");
+                alert(
+                    "Unable to delete this activity. Please try again."
+                );
+
+                return;
+            }
+
+            if (!data || data.length === 0) {
+                console.warn(
+                    "No activity record was deleted. Check the DELETE policy and record ID."
+                );
+
+                alert(
+                    "The activity was not deleted from the database. Please check your database permissions."
+                );
+
+                await loadHistory();
                 return;
             }
 
@@ -393,6 +426,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         } catch (error) {
             console.error("Unexpected history deletion error:", error);
+
             alert("Something went wrong. Please try again.");
 
         } finally {
@@ -407,9 +441,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     historyList.addEventListener("click", async event => {
 
         const viewButton = event.target.closest(".view-qr-btn");
-
         const downloadButton = event.target.closest(".download-qr-btn");
-
         const deleteButton = event.target.closest(".delete-history-btn");
 
         if (viewButton) {
@@ -475,10 +507,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         clearHistoryBtn.textContent = "Clearing...";
 
         try {
-            const { error } = await db
+            const { data, error } = await db
                 .from("activity_history")
                 .delete()
-                .eq("user_id", currentUser.id);
+                .eq("user_id", currentUser.id)
+                .select("id");
 
             if (error) {
                 console.error("Clear history error:", error);
@@ -487,10 +520,17 @@ document.addEventListener("DOMContentLoaded", async () => {
                 return;
             }
 
+            if (!data || data.length === 0) {
+                alert(
+                    "No activity records were deleted. Please check your database permissions."
+                );
+            }
+
             await loadHistory();
 
         } catch (error) {
             console.error("Unexpected clear history error:", error);
+
             alert("Something went wrong. Please try again.");
 
         } finally {
