@@ -1,0 +1,388 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Expiry Date Checker — JScan</title>
+    <meta name="description" content="Check food and medicine expiry dates with JScan.">
+
+    <link rel="stylesheet" href="css/style.css">
+
+    <style>
+        .expiry-container {
+            max-width: 760px;
+            margin: 35px auto;
+        }
+
+        .expiry-panel {
+            padding: 28px;
+        }
+
+        .upload-area {
+            border: 2px dashed var(--border);
+            border-radius: 16px;
+            padding: 35px 20px;
+            text-align: center;
+            margin: 22px 0;
+        }
+
+        .upload-icon {
+            font-size: 45px;
+            margin-bottom: 12px;
+        }
+
+        .upload-area p {
+            color: var(--muted);
+            line-height: 1.7;
+        }
+
+        .upload-actions {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .image-preview {
+            display: block;
+            max-width: 100%;
+            max-height: 350px;
+            object-fit: contain;
+            margin: 20px auto;
+            border-radius: 12px;
+        }
+
+        .image-preview[hidden],
+        .expiry-result[hidden],
+        .expiry-status[hidden] {
+            display: none;
+        }
+
+        .expiry-result {
+            margin-top: 25px;
+            padding: 22px;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+        }
+
+        .expiry-field {
+            margin-top: 18px;
+        }
+
+        .expiry-field label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .expiry-field input,
+        .expiry-field select {
+            width: 100%;
+            padding: 13px;
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            background: var(--surface);
+            color: inherit;
+            font: inherit;
+        }
+
+        .expiry-message {
+            margin-top: 18px;
+            color: var(--muted);
+            line-height: 1.7;
+        }
+
+        .expiry-status {
+            margin-top: 20px;
+            padding: 16px;
+            border-radius: 10px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            line-height: 1.7;
+        }
+
+        .expiry-warning {
+            margin-top: 22px;
+            padding: 15px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--muted);
+            line-height: 1.7;
+            font-size: 14px;
+        }
+
+        .expiry-action-btn {
+            display: block;
+            width: 100%;
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        .expiry-action-btn:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+
+        @media (max-width: 600px) {
+            .expiry-panel {
+                padding: 20px;
+            }
+
+            .upload-actions {
+                flex-direction: column;
+            }
+
+            .upload-actions .btn {
+                width: 100%;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header class="site-header">
+
+    <a class="brand" href="index.html">
+        <span class="brand-mark">J</span>
+        <span>JScan</span>
+    </a>
+
+    <button class="menu-toggle"
+            type="button"
+            aria-label="Open navigation menu"
+            aria-controls="mainNavigation"
+            aria-expanded="false">
+        ☰
+    </button>
+
+    <nav class="main-nav" id="mainNavigation">
+        <a href="index.html">Home</a>
+        <a class="active" href="tools.html">Explore tools</a>
+        <a href="about.html">About</a>
+        <a href="contact.html">Contact</a>
+    </nav>
+
+    <div class="header-actions">
+        <button class="icon-btn"
+                type="button"
+                data-theme-toggle
+                aria-label="Toggle theme">☾</button>
+
+        <a class="btn btn-ghost" href="login.html">Log in</a>
+        <a class="btn btn-primary" href="register.html">Create account</a>
+    </div>
+
+</header>
+
+<main class="wrap page-main">
+
+    <div class="breadcrumb">
+        <a href="scanner.html">Scanner</a>
+        <span>/</span>
+        <span>Expiry Date Checker</span>
+    </div>
+
+    <section class="page-intro">
+        <span class="eyebrow">JSCAN PRODUCT SAFETY</span>
+
+        <h1>Expiry Date Checker</h1>
+
+        <p>
+            Upload a picture of food or medicine packaging.
+            JScan will help identify the printed dates.
+        </p>
+    </section>
+
+    <div class="expiry-container">
+
+        <section class="panel expiry-panel">
+
+            <h2>Scan Product Label</h2>
+
+            <p class="expiry-message">
+                Take a clear picture of the product label showing
+                its manufacturing date and expiry or best-before date.
+            </p>
+
+            <div class="upload-area">
+
+                <div class="upload-icon">📷</div>
+
+                <h3>Upload Product Image</h3>
+
+                <p>
+                    Choose a picture from your device or use
+                    your camera to capture the label.
+                </p>
+
+                <div class="upload-actions">
+
+                    <label for="expiryImageInput"
+                           class="btn btn-primary">
+                        Upload Image
+                    </label>
+
+                    <label for="expiryCameraInput"
+                           class="btn btn-ghost">
+                        Take Photo
+                    </label>
+
+                </div>
+
+                <input
+                    type="file"
+                    id="expiryImageInput"
+                    class="file-input"
+                    accept="image/*"
+                >
+
+                <input
+                    type="file"
+                    id="expiryCameraInput"
+                    class="file-input"
+                    accept="image/*"
+                    capture="environment"
+                >
+
+            </div>
+
+            <img
+                id="expiryImagePreview"
+                class="image-preview"
+                alt="Uploaded product label"
+                hidden
+            >
+
+            <p id="expiryFileName" class="fine-print"></p>
+
+            <button
+                id="readExpiryBtn"
+                class="btn btn-primary expiry-action-btn"
+                type="button"
+                disabled
+            >
+                Read Product Dates
+            </button>
+
+            <p
+                id="expiryMessage"
+                class="expiry-message"
+                role="status"
+                aria-live="polite"
+            >
+                Upload a product image to begin.
+            </p>
+
+            <!-- DETECTED INFORMATION -->
+
+            <section id="expiryResult" class="expiry-result" hidden>
+
+                <h2>Confirm Product Information</h2>
+
+                <p class="expiry-message">
+                    Check the detected information carefully.
+                    Correct anything that does not match the product label.
+                </p>
+
+                <div class="expiry-field">
+
+                    <label for="productType">Product Type</label>
+
+                    <select id="productType">
+                        <option value="food">Food</option>
+                        <option value="medicine">Medicine</option>
+                        <option value="other">Other</option>
+                    </select>
+
+                </div>
+
+                <div class="expiry-field">
+
+                    <label for="manufactureDate">
+                        Manufacturing Date (optional)
+                    </label>
+
+                    <input
+                        type="date"
+                        id="manufactureDate"
+                    >
+
+                </div>
+
+                <div class="expiry-field">
+
+                    <label for="expiryDate">
+                        Expiry / Best Before Date
+                    </label>
+
+                    <input
+                        type="date"
+                        id="expiryDate"
+                    >
+
+                </div>
+
+                <button
+                    id="checkExpiryBtn"
+                    class="btn btn-primary expiry-action-btn"
+                    type="button"
+                >
+                    Check Expiry Status
+                </button>
+
+                <div
+                    id="expiryStatus"
+                    class="expiry-status"
+                    role="status"
+                    aria-live="polite"
+                    hidden
+                ></div>
+
+            </section>
+
+        </section>
+
+        <div class="expiry-warning">
+
+            <strong>Important safety information:</strong>
+
+            This tool assists with reading product labels. It cannot
+            establish whether a product is safe to consume or use.
+            Always check the original packaging and follow official
+            product guidance. If a medicine's expiry date is unclear,
+            ask a pharmacist rather than relying on an automated reading.
+
+        </div>
+
+    </div>
+
+</main>
+
+<footer class="site-footer wrap">
+
+    <a class="brand" href="index.html">
+        <span class="brand-mark">J</span>
+        <span>JScan</span>
+    </a>
+
+    <span>© 2026 JScan</span>
+
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
+<script src="js/expiry-checker.js"></script>
+
+<script src="js/main.js"></script>
+
+</body>
+</html>

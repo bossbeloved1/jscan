@@ -1,0 +1,731 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Contact JScan — JScan</title>
+  <link rel="stylesheet" href="css/style.css">
+
+  <style>
+    .contact-page {
+      padding-bottom: 70px;
+    }
+
+    /* HERO */
+    .contact-hero {
+      position: relative;
+      padding: 70px 30px;
+      margin: 25px 0 55px;
+      border-radius: 25px;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 85% 15%, rgba(65,130,255,.25), transparent 35%),
+        linear-gradient(135deg, #071a36, #102f62 65%, #174b91);
+      color: white;
+    }
+
+    .contact-hero-content {
+      position: relative;
+      z-index: 1;
+      max-width: 720px;
+    }
+
+    .contact-label {
+      display: inline-flex;
+      padding: 8px 13px;
+      border: 1px solid rgba(255,255,255,.22);
+      border-radius: 30px;
+      background: rgba(255,255,255,.08);
+      color: #c8ddff;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+    }
+
+    .contact-hero h1 {
+      font-size: clamp(36px, 6vw, 60px);
+      line-height: 1.1;
+      letter-spacing: -2px;
+      margin: 24px 0 17px;
+      color: white;
+    }
+
+    .contact-hero h1 span {
+      color: #80b5ff;
+    }
+
+    .contact-hero p {
+      max-width: 600px;
+      color: #d5e3fa;
+      font-size: 16px;
+      line-height: 1.8;
+      margin: 0;
+    }
+
+    /* CONTACT LAYOUT */
+    .contact-layout {
+      display: grid;
+      grid-template-columns: .85fr 1.4fr;
+      gap: 25px;
+      align-items: start;
+    }
+
+    .contact-info,
+    .contact-form-card {
+      border: 1px solid var(--border, rgba(128,128,128,.2));
+      border-radius: 20px;
+      background: var(--surface, var(--panel, transparent));
+      padding: 28px;
+    }
+
+    .contact-info h2,
+    .contact-form-card h2 {
+      font-size: 23px;
+      margin: 0 0 12px;
+    }
+
+    .contact-info > p,
+    .contact-form-card > p {
+      font-size: 14px;
+      line-height: 1.8;
+      opacity: .72;
+      margin-bottom: 25px;
+    }
+
+    .contact-method {
+      display: flex;
+      gap: 15px;
+      align-items: flex-start;
+      padding: 17px 0;
+      border-bottom: 1px solid var(--border, rgba(128,128,128,.18));
+    }
+
+    .contact-method:last-child {
+      border-bottom: none;
+    }
+
+    .contact-method-icon {
+      flex: 0 0 43px;
+      height: 43px;
+      display: grid;
+      place-items: center;
+      border-radius: 13px;
+      background: rgba(45,115,230,.12);
+      color: var(--blue);
+      font-size: 19px;
+    }
+
+    .contact-method strong {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 5px;
+    }
+
+    .contact-method span,
+    .contact-method a {
+      font-size: 13px;
+      line-height: 1.6;
+      opacity: .75;
+      overflow-wrap: anywhere;
+    }
+
+    .contact-method a {
+      color: var(--blue);
+      text-decoration: none;
+    }
+
+    .contact-method a:hover {
+      text-decoration: underline;
+    }
+
+    /* CONTACT FORM */
+    .contact-form {
+      display: grid;
+      gap: 17px;
+    }
+
+    .contact-form label {
+      display: block;
+      font-size: 13px;
+      font-weight: 650;
+      margin-bottom: 8px;
+    }
+
+    .contact-form input,
+    .contact-form select,
+    .contact-form textarea {
+      width: 100%;
+      padding: 13px 14px;
+      border: 1px solid var(--border, rgba(128,128,128,.3));
+      border-radius: 11px;
+      background: var(--bg, transparent);
+      color: var(--text, inherit);
+      font: inherit;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .contact-form input:focus,
+    .contact-form select:focus,
+    .contact-form textarea:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(45,115,230,.1);
+    }
+
+    .contact-form textarea {
+      min-height: 150px;
+      resize: vertical;
+    }
+
+    /* DROPDOWN FIX — LIGHT MODE */
+    .contact-form select {
+      color-scheme: light;
+    }
+
+    .contact-form select option {
+      background-color: #ffffff;
+      color: #111827;
+    }
+
+    /* DROPDOWN FIX — DARK MODE */
+    html[data-theme="dark"] .contact-form select,
+    body[data-theme="dark"] .contact-form select,
+    html.dark .contact-form select,
+    body.dark .contact-form select,
+    html.dark-mode .contact-form select,
+    body.dark-mode .contact-form select {
+      background-color: #17243a;
+      color: #f1f5f9;
+      color-scheme: dark;
+    }
+
+    html[data-theme="dark"] .contact-form select option,
+    body[data-theme="dark"] .contact-form select option,
+    html.dark .contact-form select option,
+    body.dark .contact-form select option,
+    html.dark-mode .contact-form select option,
+    body.dark-mode .contact-form select option {
+      background-color: #17243a;
+      color: #f1f5f9;
+    }
+
+    .contact-form .btn {
+      width: 100%;
+      cursor: pointer;
+      border: none;
+      padding: 14px;
+      font-size: 14px;
+    }
+
+    .contact-form .btn:disabled {
+      opacity: .6;
+      cursor: not-allowed;
+    }
+
+    .contact-note {
+      font-size: 12px;
+      opacity: .6;
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    #contactFormStatus {
+      font-size: 13px;
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    /* FAQ HEADING */
+    .contact-faq {
+      margin-top: 65px;
+    }
+
+    .contact-heading {
+      max-width: 650px;
+      margin-bottom: 25px;
+    }
+
+    .contact-heading .eyebrow {
+      color: var(--blue);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+    }
+
+    .contact-heading h2 {
+      font-size: clamp(27px, 4vw, 38px);
+      margin: 12px 0;
+      letter-spacing: -1px;
+    }
+
+    .contact-heading p {
+      font-size: 14px;
+      line-height: 1.8;
+      opacity: .7;
+    }
+
+    /* FAQ ACCORDION */
+    .faq-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .faq-item {
+      padding: 0;
+      overflow: hidden;
+      border: 1px solid var(--border, rgba(128,128,128,.2));
+      border-radius: 14px;
+      background: var(--surface, var(--panel, transparent));
+      transition: border-color .2s ease;
+    }
+
+    .faq-item.open {
+      border-color: var(--blue);
+    }
+
+    .faq-question {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 15px;
+      padding: 20px 22px;
+      border: none;
+      background: transparent;
+      color: inherit;
+      text-align: left;
+      font: inherit;
+      font-size: 15px;
+      font-weight: 650;
+      cursor: pointer;
+    }
+
+    .faq-question:hover {
+      color: var(--blue);
+    }
+
+    .faq-arrow {
+      flex: 0 0 auto;
+      font-size: 21px;
+      color: var(--blue);
+      transition: transform .25s ease;
+    }
+
+    .faq-answer {
+      display: grid;
+      grid-template-rows: 0fr;
+      transition: grid-template-rows .3s ease;
+    }
+
+    .faq-answer-inner {
+      overflow: hidden;
+    }
+
+    .faq-answer p {
+      padding: 0 22px 20px;
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.8;
+      opacity: .75;
+    }
+
+    .faq-item.open .faq-answer {
+      grid-template-rows: 1fr;
+    }
+
+    .faq-item.open .faq-arrow {
+      transform: rotate(180deg);
+    }
+
+    /* BOTTOM CTA */
+    .contact-bottom {
+      margin-top: 55px;
+      padding: 40px 25px;
+      border-radius: 22px;
+      background: linear-gradient(135deg, #0c2850, #1556a5);
+      color: white;
+      text-align: center;
+    }
+
+    .contact-bottom h2 {
+      color: white;
+      font-size: clamp(24px, 4vw, 34px);
+      margin: 0 0 12px;
+    }
+
+    .contact-bottom p {
+      color: #d9e8ff;
+      font-size: 14px;
+      line-height: 1.8;
+      max-width: 570px;
+      margin: 0 auto 22px;
+    }
+
+    .contact-bottom .btn {
+      background: white;
+      color: #124b91;
+      border: none;
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 800px) {
+      .contact-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 500px) {
+      .contact-hero {
+        padding: 55px 22px;
+      }
+
+      .contact-hero h1 {
+        letter-spacing: -1px;
+      }
+
+      .contact-info,
+      .contact-form-card {
+        padding: 22px;
+      }
+
+      .faq-question {
+        padding: 18px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- HEADER -->
+<header class="site-header">
+
+  <a class="brand" href="index.html">
+    <span class="brand-mark">J</span>
+    <span>JScan</span>
+  </a>
+
+  <nav class="main-nav">
+    <a href="index.html">Home</a>
+    <a class="active" href="tools.html">Explore tools</a>
+    <a href="about.html">About</a>
+    <a href="contact.html">Contact</a>
+  </nav>
+
+  <div class="header-actions">
+    <button class="icon-btn" data-theme-toggle aria-label="Toggle theme">☾</button>
+    <a class="btn btn-ghost" href="login.html">Log in</a>
+    <a class="btn btn-primary" href="register.html">Create account</a>
+  </div>
+
+</header>
+
+<main class="wrap page-main contact-page">
+
+  <!-- BREADCRUMB -->
+  <div class="breadcrumb">
+    <a href="tools.html">All tools</a>
+    <span>/</span>
+    <span>Contact JScan</span>
+  </div>
+
+  <!-- HERO -->
+  <section class="contact-hero">
+    <div class="contact-hero-content">
+      <span class="contact-label">WE'D LOVE TO HEAR FROM YOU</span>
+
+      <h1>
+        Let's start a<br>
+        <span>conversation.</span>
+      </h1>
+
+      <p>
+        Have a question, suggestion, feedback or need assistance using
+        JScan? Send us a message. We're always interested in hearing
+        from people who use and support our platform.
+      </p>
+    </div>
+  </section>
+
+  <!-- CONTACT CONTENT -->
+  <section class="contact-layout">
+
+    <!-- CONTACT INFORMATION -->
+    <aside class="contact-info">
+
+      <h2>Get in touch</h2>
+
+      <p>
+        Choose the most convenient way to reach the JScan team.
+      </p>
+
+      <div class="contact-method">
+        <div class="contact-method-icon">✉</div>
+        <div>
+          <strong>Official email</strong>
+          <a href="mailto:jscancode@gmail.com">
+            jscancode@gmail.com
+          </a>
+        </div>
+      </div>
+
+      <div class="contact-method">
+        <div class="contact-method-icon">◷</div>
+        <div>
+          <strong>Support hours</strong>
+          <span>
+            Response times may vary depending on your enquiry.
+          </span>
+        </div>
+      </div>
+
+      <div class="contact-method">
+        <div class="contact-method-icon">◎</div>
+        <div>
+          <strong>Feedback & suggestions</strong>
+          <span>
+            Your ideas can help us improve the JScan experience.
+          </span>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- CONTACT FORM -->
+    <section class="contact-form-card">
+
+      <h2>Send us a message</h2>
+
+      <p>
+        Complete the form below to send your message directly to JScan.
+      </p>
+
+      <form class="contact-form" id="contactForm">
+
+        <div>
+          <label for="contactName">Full name</label>
+          <input
+            type="text"
+            id="contactName"
+            placeholder="Enter your name"
+            required
+            minlength="2"
+            maxlength="100"
+            autocomplete="name"
+          >
+        </div>
+
+        <div>
+          <label for="contactEmail">Email address</label>
+          <input
+            type="email"
+            id="contactEmail"
+            placeholder="you@example.com"
+            required
+            maxlength="254"
+            autocomplete="email"
+          >
+        </div>
+
+        <div>
+          <label for="contactSubject">What is your message about?</label>
+
+          <select id="contactSubject" required>
+            <option value="">Select a subject</option>
+            <option value="General enquiry">General enquiry</option>
+            <option value="Technical support">Technical support</option>
+            <option value="Report a problem">Report a problem</option>
+            <option value="Feature suggestion">Feature suggestion</option>
+            <option value="Partnership enquiry">Partnership enquiry</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="contactMessage">Your message</label>
+          <textarea
+            id="contactMessage"
+            placeholder="Tell us how we can help..."
+            required
+            minlength="10"
+            maxlength="5000"
+          ></textarea>
+        </div>
+
+        <p id="contactFormStatus" role="status" aria-live="polite"></p>
+
+        <button type="submit" class="btn btn-primary">
+          Send message →
+        </button>
+
+        <p class="contact-note">
+          Your message will be submitted securely to JScan. Please do
+          not include passwords or other sensitive information.
+        </p>
+
+      </form>
+
+    </section>
+
+  </section>
+
+  <!-- FAQ SECTION -->
+  <section class="contact-faq">
+
+    <div class="contact-heading">
+      <span class="eyebrow">HELP CENTRE</span>
+
+      <h2>Frequently asked questions.</h2>
+
+      <p>
+        Find quick answers to common questions about JScan.
+      </p>
+    </div>
+
+    <div class="faq-list">
+
+      <article class="faq-item">
+        <button class="faq-question" type="button" aria-expanded="false">
+          <span>What is JScan?</span>
+          <span class="faq-arrow">⌄</span>
+        </button>
+
+        <div class="faq-answer">
+          <div class="faq-answer-inner">
+            <p>
+              JScan is a growing digital workspace that brings useful
+              document, image, QR code and productivity tools together
+              in one place.
+            </p>
+          </div>
+        </div>
+      </article>
+
+      <article class="faq-item">
+        <button class="faq-question" type="button" aria-expanded="false">
+          <span>Do I need an account to use JScan?</span>
+          <span class="faq-arrow">⌄</span>
+        </button>
+
+        <div class="faq-answer">
+          <div class="faq-answer-inner">
+            <p>
+              Some features may be available to guests, while registered
+              users can access the full set of account-enabled features.
+            </p>
+          </div>
+        </div>
+      </article>
+
+      <article class="faq-item">
+        <button class="faq-question" type="button" aria-expanded="false">
+          <span>Is JScan free?</span>
+          <span class="faq-arrow">⌄</span>
+        </button>
+
+        <div class="faq-answer">
+          <div class="faq-answer-inner">
+            <p>
+              JScan is being developed with free access as a core goal.
+              Available features and usage limits may vary.
+            </p>
+          </div>
+        </div>
+      </article>
+
+      <article class="faq-item">
+        <button class="faq-question" type="button" aria-expanded="false">
+          <span>How can I report a problem?</span>
+          <span class="faq-arrow">⌄</span>
+        </button>
+
+        <div class="faq-answer">
+          <div class="faq-answer-inner">
+            <p>
+              Use the contact form above and select Technical support
+              or Report a problem. Include enough information to help
+              us understand the issue.
+            </p>
+          </div>
+        </div>
+      </article>
+
+      <article class="faq-item">
+        <button class="faq-question" type="button" aria-expanded="false">
+          <span>Can I suggest a new feature?</span>
+          <span class="faq-arrow">⌄</span>
+        </button>
+
+        <div class="faq-answer">
+          <div class="faq-answer-inner">
+            <p>
+              Absolutely. Select Feature suggestion in the contact form
+              and tell us what you'd like to see added to JScan.
+            </p>
+          </div>
+        </div>
+      </article>
+
+      <article class="faq-item">
+        <button class="faq-question" type="button" aria-expanded="false">
+          <span>How do I contact the JScan team directly?</span>
+          <span class="faq-arrow">⌄</span>
+        </button>
+
+        <div class="faq-answer">
+          <div class="faq-answer-inner">
+            <p>
+              You can reach JScan through our official email address:
+              jscancode@gmail.com.
+            </p>
+          </div>
+        </div>
+      </article>
+
+    </div>
+
+  </section>
+
+  <!-- BOTTOM CTA -->
+  <section class="contact-bottom">
+
+    <h2>Have an idea for JScan?</h2>
+
+    <p>
+      We're building a workspace that keeps getting better.
+      Your feedback is an important part of that journey.
+    </p>
+
+    <a href="tools.html" class="btn">
+      Explore JScan →
+    </a>
+
+  </section>
+
+</main>
+
+<!-- FOOTER -->
+<footer class="site-footer wrap">
+
+  <a class="brand" href="index.html">
+    <span class="brand-mark">J</span>
+    <span>JScan</span>
+  </a>
+
+  <span>© 2026 JScan</span>
+
+</footer>
+
+<!-- SCRIPTS: KEEP THIS ORDER -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script src="js/supabase.js"></script>
+
+<script src="js/main.js"></script>
+
+<script src="js/contact.js"></script>
+
+</body>
+</html>

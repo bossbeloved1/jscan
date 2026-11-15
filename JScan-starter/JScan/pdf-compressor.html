@@ -1,0 +1,520 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>PDF Compressor — JScan</title>
+
+    <link rel="stylesheet" href="css/style.css">
+
+    <style>
+        /* PDF COMPRESSOR PAGE */
+
+        .compressor-container {
+            width: 100%;
+            max-width: 950px;
+            margin: 35px auto;
+        }
+
+        .compressor-container,
+        .compressor-container * {
+            box-sizing: border-box;
+        }
+
+        .pdf-upload-area {
+            display: flex !important;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            min-height: 220px;
+            padding: 35px 20px;
+            border: 2px dashed var(--border-color, #64748b);
+            border-radius: 14px;
+            text-align: center;
+            cursor: pointer;
+            transition: .2s ease;
+        }
+
+        .pdf-upload-area:hover {
+            border-color: #2563eb;
+            background: rgba(37, 99, 235, .05);
+        }
+
+        .pdf-upload-area input {
+            display: none !important;
+        }
+
+        .pdf-upload-icon {
+            font-size: 45px;
+            margin-bottom: 15px;
+        }
+
+        .pdf-upload-area h3 {
+            margin: 0 0 10px;
+        }
+
+        .pdf-upload-area p {
+            margin: 0 0 12px;
+        }
+
+        .pdf-upload-area small {
+            opacity: .7;
+        }
+
+        .pdf-file-info {
+            display: none;
+            margin-top: 22px;
+            padding: 18px;
+            border: 1px solid var(--border-color, #334155);
+            border-radius: 12px;
+            background: var(--card-bg, transparent);
+        }
+
+        .pdf-file-info.show {
+            display: block;
+        }
+
+        .pdf-file-row {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .pdf-file-icon {
+            font-size: 35px;
+        }
+
+        .pdf-file-details {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .pdf-file-name {
+            font-weight: 600;
+            overflow-wrap: anywhere;
+        }
+
+        .pdf-file-size {
+            font-size: 13px;
+            opacity: .7;
+            margin-top: 5px;
+        }
+
+        .pdf-remove-btn {
+            border: 1px solid var(--border-color, #334155);
+            border-radius: 7px;
+            padding: 8px 12px;
+            background: transparent;
+            color: inherit;
+            cursor: pointer;
+        }
+
+        .compress-settings {
+            display: none;
+            margin-top: 25px;
+        }
+
+        .compress-settings.show {
+            display: block;
+        }
+
+        .compress-section {
+            margin-bottom: 24px;
+        }
+
+        .compress-section h3 {
+            font-size: 16px;
+            margin: 0 0 12px;
+        }
+
+        /* COMPRESSION QUALITY DROPDOWN */
+
+        .compressor-container #compressionQuality {
+            display: block;
+            width: 100%;
+            max-width: 350px;
+            min-height: 45px;
+            padding: 12px;
+            border: 1px solid var(--border-color, #64748b);
+            border-radius: 8px;
+            background-color: #ffffff !important;
+            color: #1f2937 !important;
+            font: inherit;
+            cursor: pointer;
+            color-scheme: light;
+        }
+
+        .compressor-container #compressionQuality option {
+            background-color: #ffffff !important;
+            color: #1f2937 !important;
+        }
+
+        /* DARK THEME */
+
+        html[data-theme="dark"] .compressor-container #compressionQuality,
+        body[data-theme="dark"] .compressor-container #compressionQuality,
+        html.dark-mode .compressor-container #compressionQuality,
+        body.dark-mode .compressor-container #compressionQuality,
+        body.dark .compressor-container #compressionQuality {
+            background-color: #1e293b !important;
+            color: #ffffff !important;
+            border-color: #475569;
+            color-scheme: dark;
+        }
+
+        html[data-theme="dark"] .compressor-container #compressionQuality option,
+        body[data-theme="dark"] .compressor-container #compressionQuality option,
+        html.dark-mode .compressor-container #compressionQuality option,
+        body.dark-mode .compressor-container #compressionQuality option,
+        body.dark .compressor-container #compressionQuality option {
+            background-color: #1e293b !important;
+            color: #ffffff !important;
+        }
+
+        .compression-note {
+            margin-top: 15px;
+            padding: 13px;
+            border-radius: 9px;
+            background: rgba(37, 99, 235, .07);
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .compress-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 25px;
+        }
+
+        .compress-actions button {
+            min-height: 45px;
+        }
+
+        .compress-status {
+            margin-top: 18px;
+            font-size: 14px;
+        }
+
+        .compress-result {
+            display: none;
+            margin-top: 22px;
+            padding: 20px;
+            border: 1px solid var(--border-color, #334155);
+            border-radius: 12px;
+        }
+
+        .compress-result.show {
+            display: block;
+        }
+
+        .compress-result h3 {
+            margin-top: 0;
+        }
+
+        .result-comparison {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+
+        .result-box {
+            padding: 15px;
+            border-radius: 9px;
+            background: rgba(100, 116, 139, .08);
+        }
+
+        .result-box small {
+            display: block;
+            opacity: .7;
+            margin-bottom: 7px;
+        }
+
+        .result-box strong {
+            font-size: 19px;
+        }
+
+        @media(max-width: 600px) {
+            .result-comparison {
+                grid-template-columns: 1fr;
+            }
+
+            .pdf-file-row {
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- JSCAN HEADER -->
+
+    <header class="site-header">
+
+        <a class="brand" href="index.html">
+            <span class="brand-mark">J</span>
+            <span>JScan</span>
+        </a>
+
+        <button
+            class="menu-toggle"
+            type="button"
+            aria-label="Open navigation menu"
+            aria-controls="mainNavigation"
+            aria-expanded="false"
+        >☰</button>
+
+        <nav class="main-nav" id="mainNavigation">
+            <a href="index.html">Home</a>
+            <a class="active" href="tools.html">Explore tools</a>
+            <a href="about.html">About</a>
+            <a href="contact.html">Contact</a>
+        </nav>
+
+        <div class="header-actions">
+
+            <button
+                class="icon-btn"
+                data-theme-toggle
+                aria-label="Toggle theme"
+                type="button"
+            >☾</button>
+
+            <a class="btn btn-ghost" href="login.html">Log in</a>
+
+            <a class="btn btn-primary" href="register.html">
+                Create account
+            </a>
+
+        </div>
+
+    </header>
+
+
+    <!-- MAIN CONTENT -->
+
+    <main class="wrap page-main">
+
+        <div class="breadcrumb">
+            <a href="index.html">Home</a>
+            /
+            <a href="tools.html">Explore tools</a>
+            /
+            PDF Compressor
+        </div>
+
+        <section class="page-intro">
+
+            <span class="eyebrow">PDF TOOLS</span>
+
+            <h1>Compress PDF</h1>
+
+            <p>
+                Reduce the file size of your PDF documents.
+                Choose your preferred compression quality and
+                download the compressed document.
+            </p>
+
+        </section>
+
+
+        <section class="compressor-container">
+
+            <div class="panel">
+
+                <!-- UPLOAD -->
+
+                <label class="pdf-upload-area" for="pdfFileInput">
+
+                    <input
+                        type="file"
+                        id="pdfFileInput"
+                        accept="application/pdf,.pdf"
+                    >
+
+                    <div class="pdf-upload-icon">📄</div>
+
+                    <h3>Select a PDF file</h3>
+
+                    <p>Click here or drag and drop your PDF</p>
+
+                    <small>PDF documents only</small>
+
+                </label>
+
+
+                <!-- SELECTED FILE -->
+
+                <div class="pdf-file-info" id="pdfFileInfo">
+
+                    <div class="pdf-file-row">
+
+                        <div class="pdf-file-icon">📕</div>
+
+                        <div class="pdf-file-details">
+
+                            <div
+                                class="pdf-file-name"
+                                id="pdfFileName"
+                            ></div>
+
+                            <div
+                                class="pdf-file-size"
+                                id="pdfOriginalSize"
+                            ></div>
+
+                        </div>
+
+                        <button
+                            type="button"
+                            class="pdf-remove-btn"
+                            id="removePdfBtn"
+                        >
+                            Remove
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                <!-- COMPRESSION SETTINGS -->
+
+                <div class="compress-settings" id="compressSettings">
+
+                    <div class="compress-section">
+
+                        <h3>Compression quality</h3>
+
+                        <select id="compressionQuality">
+
+                            <option value="high">
+                                High quality — less reduction
+                            </option>
+
+                            <option value="balanced" selected>
+                                Balanced — recommended
+                            </option>
+
+                            <option value="maximum">
+                                Maximum compression — possible quality loss
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="compression-note">
+                        <strong>Note:</strong>
+                        Higher compression may reduce image quality.
+                        JScan will show the actual resulting file size
+                        after compression.
+                    </div>
+
+
+                    <div class="compress-actions">
+
+                        <button
+                            type="button"
+                            class="btn btn-primary"
+                            id="compressPdfBtn"
+                            disabled
+                        >
+                            Compress PDF
+                        </button>
+
+                        <button
+                            type="button"
+                            class="btn btn-ghost"
+                            id="resetCompressorBtn"
+                        >
+                            Start Over
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                <!-- STATUS -->
+
+                <div
+                    class="compress-status"
+                    id="compressStatus"
+                    aria-live="polite"
+                ></div>
+
+
+                <!-- RESULT -->
+
+                <div class="compress-result" id="compressResult">
+
+                    <h3>Compression complete</h3>
+
+                    <div class="result-comparison">
+
+                        <div class="result-box">
+                            <small>Original size</small>
+                            <strong id="resultOriginalSize">—</strong>
+                        </div>
+
+                        <div class="result-box">
+                            <small>Compressed size</small>
+                            <strong id="resultCompressedSize">—</strong>
+                        </div>
+
+                    </div>
+
+                    <p id="compressionPercentage"></p>
+
+                    <button
+                        type="button"
+                        class="btn btn-primary"
+                        id="downloadCompressedBtn"
+                    >
+                        Download Compressed PDF
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <p class="fine-print">
+                Your document will be processed securely.
+                The compression method and achievable size depend
+                on the contents of your PDF.
+            </p>
+
+        </section>
+
+    </main>
+
+
+    <!-- FOOTER -->
+
+    <footer class="site-footer wrap">
+
+        <div class="brand">
+            <span class="brand-mark">J</span>
+            <span>JScan</span>
+        </div>
+
+        <p>© 2026 JScan. All rights reserved.</p>
+
+    </footer>
+
+
+    <!-- JAVASCRIPT -->
+
+    <script src="js/main.js"></script>
+    <script src="js/pdf-compressor.js"></script>
+
+</body>
+</html>

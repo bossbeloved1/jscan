@@ -1,0 +1,463 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>About JScan — JScan</title>
+  <link rel="stylesheet" href="css/style.css">
+
+  <style>
+    .about-page {
+      padding-bottom: 70px;
+      overflow: hidden;
+    }
+
+    .about-hero {
+      position: relative;
+      padding: 85px 30px;
+      margin: 25px 0 65px;
+      border-radius: 26px;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 85% 15%, rgba(65,130,255,.23), transparent 35%),
+        linear-gradient(135deg, #071a36, #102f62 65%, #174b91);
+      color: #fff;
+    }
+
+    .about-hero::after {
+      content: "";
+      position: absolute;
+      width: 360px;
+      height: 360px;
+      right: -100px;
+      bottom: -180px;
+      border: 1px solid rgba(255,255,255,.16);
+      border-radius: 50%;
+      box-shadow: 0 0 0 35px rgba(255,255,255,.035),
+                  0 0 0 75px rgba(255,255,255,.025);
+    }
+
+    .about-hero-content {
+      position: relative;
+      z-index: 1;
+      max-width: 760px;
+    }
+
+    .about-label {
+      display: inline-flex;
+      padding: 8px 13px;
+      border: 1px solid rgba(255,255,255,.22);
+      border-radius: 30px;
+      background: rgba(255,255,255,.08);
+      color: #c8ddff;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+    }
+
+    .about-hero h1 {
+      font-size: clamp(38px, 6vw, 68px);
+      line-height: 1.08;
+      letter-spacing: -2px;
+      margin: 25px 0 20px;
+      color: #fff;
+    }
+
+    .about-hero h1 span {
+      color: #80b5ff;
+    }
+
+    .about-hero p {
+      max-width: 650px;
+      color: #d5e3fa;
+      font-size: 17px;
+      line-height: 1.8;
+      margin-bottom: 30px;
+    }
+
+    .about-section {
+      margin: 65px 0;
+    }
+
+    .about-section-heading {
+      max-width: 700px;
+      margin-bottom: 30px;
+    }
+
+    .about-section-heading .eyebrow {
+      color: var(--blue);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+    }
+
+    .about-section-heading h2 {
+      font-size: clamp(27px, 4vw, 40px);
+      letter-spacing: -1px;
+      margin: 12px 0;
+    }
+
+    .about-section-heading p,
+    .about-copy {
+      line-height: 1.85;
+      opacity: .8;
+    }
+
+    .about-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 20px;
+    }
+
+    .about-card {
+      padding: 28px;
+      border: 1px solid var(--border, rgba(128,128,128,.2));
+      border-radius: 19px;
+      background: var(--surface, var(--panel, transparent));
+    }
+
+    .about-card-icon {
+      width: 48px;
+      height: 48px;
+      display: grid;
+      place-items: center;
+      border-radius: 14px;
+      background: rgba(45,115,230,.12);
+      color: var(--blue);
+      font-size: 23px;
+      margin-bottom: 20px;
+    }
+
+    .about-card h3 {
+      font-size: 19px;
+      margin: 0 0 10px;
+    }
+
+    .about-card p {
+      font-size: 14px;
+      line-height: 1.8;
+      opacity: .75;
+      margin: 0;
+    }
+
+    .about-feature-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .about-feature {
+      padding: 23px;
+      border-radius: 17px;
+      background: var(--surface, var(--panel, transparent));
+      border: 1px solid var(--border, rgba(128,128,128,.2));
+    }
+
+    .about-feature strong {
+      display: block;
+      margin-bottom: 9px;
+      font-size: 16px;
+    }
+
+    .about-feature p {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.7;
+      opacity: .72;
+    }
+
+    .about-cta {
+      margin-top: 70px;
+      padding: 50px 25px;
+      border-radius: 23px;
+      text-align: center;
+      background: linear-gradient(135deg, #0c2850, #1556a5);
+      color: white;
+    }
+
+    .about-cta h2 {
+      font-size: clamp(26px, 4vw, 38px);
+      color: white;
+      margin: 0 0 13px;
+    }
+
+    .about-cta p {
+      max-width: 570px;
+      margin: 0 auto 25px;
+      color: #d9e8ff;
+      line-height: 1.8;
+    }
+
+    .about-cta .btn {
+      background: white;
+      color: #124b91;
+      border: none;
+    }
+
+    @media (max-width: 750px) {
+      .about-hero {
+        padding: 65px 23px;
+        margin-bottom: 45px;
+      }
+
+      .about-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .about-feature-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .about-section {
+        margin: 48px 0;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .about-hero h1 {
+        letter-spacing: -1px;
+      }
+
+      .about-hero p {
+        font-size: 15px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<header class="site-header">
+  <a class="brand" href="index.html">
+    <span class="brand-mark">J</span>
+    <span>JScan</span>
+  </a>
+
+  <nav class="main-nav">
+    <a href="index.html">Home</a>
+    <a class="active" href="tools.html">Explore tools</a>
+    <a href="about.html">About</a>
+    <a href="contact.html">Contact</a>
+  </nav>
+
+  <div class="header-actions">
+    <button class="icon-btn" data-theme-toggle aria-label="Toggle theme">☾</button>
+    <a class="btn btn-ghost" href="login.html">Log in</a>
+    <a class="btn btn-primary" href="register.html">Create account</a>
+  </div>
+</header>
+
+<main class="wrap page-main about-page">
+
+  <div class="breadcrumb">
+    <a href="tools.html">All tools</a>
+    <span>/</span>
+    <span>About JScan</span>
+  </div>
+
+  <!-- HERO -->
+  <section class="about-hero">
+    <div class="about-hero-content">
+      <span class="about-label">GET TO KNOW JSCAN</span>
+
+      <h1>
+        Work smarter.<br>
+        Create more.<br>
+        <span>Do it with JScan.</span>
+      </h1>
+
+      <p>
+        JScan is a growing digital workspace designed to make everyday
+        digital tasks simpler. From document management to creative
+        productivity, we're bringing useful tools together in one place.
+      </p>
+
+      <a href="tools.html" class="btn btn-primary">
+        Explore our tools →
+      </a>
+    </div>
+  </section>
+
+  <!-- INTRODUCTION -->
+  <section class="about-section">
+    <div class="about-section-heading">
+      <span class="eyebrow">WHO WE ARE</span>
+      <h2>One workspace. More possibilities.</h2>
+      <p>
+        We believe that getting digital work done shouldn't require
+        jumping between countless websites and complicated applications.
+      </p>
+    </div>
+
+    <p class="about-copy">
+      JScan is built around a simple idea: make useful digital tools
+      accessible, convenient and easy to use. Whether you're a student,
+      professional, business owner or everyday internet user, JScan aims
+      to provide practical solutions that help you get things done.
+    </p>
+  </section>
+
+  <!-- MISSION AND VISION -->
+  <section class="about-section">
+    <div class="about-grid">
+
+      <article class="about-card">
+        <div class="about-card-icon">✦</div>
+        <h3>Our Mission</h3>
+        <p>
+          To simplify everyday digital tasks by bringing practical,
+          accessible and easy-to-use tools into one unified workspace.
+        </p>
+      </article>
+
+      <article class="about-card">
+        <div class="about-card-icon">◎</div>
+        <h3>Our Vision</h3>
+        <p>
+          To grow into a trusted digital productivity platform that
+          empowers people to work, create and accomplish more with ease.
+        </p>
+      </article>
+
+    </div>
+  </section>
+
+  <!-- WHAT WE OFFER -->
+  <section class="about-section">
+    <div class="about-section-heading">
+      <span class="eyebrow">WHAT WE OFFER</span>
+      <h2>Everything coming together.</h2>
+      <p>
+        JScan brings different categories of digital productivity tools
+        together, with room to grow as new features are developed.
+      </p>
+    </div>
+
+    <div class="about-feature-grid">
+
+      <article class="about-feature">
+        <strong>Document Tools</strong>
+        <p>
+          Work with PDF and Office documents through conversion,
+          compression, merging and other useful operations.
+        </p>
+      </article>
+
+      <article class="about-feature">
+        <strong>Image & OCR Tools</strong>
+        <p>
+          Extract text from images and handle everyday image-related
+          document tasks.
+        </p>
+      </article>
+
+      <article class="about-feature">
+        <strong>QR & Barcode Tools</strong>
+        <p>
+          Generate and scan QR codes and barcodes for convenient
+          digital sharing and identification.
+        </p>
+      </article>
+
+      <article class="about-feature">
+        <strong>Creative Workspace</strong>
+        <p>
+          Explore tools designed to support presentations,
+          project writing and creative productivity.
+        </p>
+      </article>
+
+      <article class="about-feature">
+        <strong>Simple Experience</strong>
+        <p>
+          Enjoy a workspace designed with straightforward navigation
+          and an accessible user experience.
+        </p>
+      </article>
+
+      <article class="about-feature">
+        <strong>Continuous Improvement</strong>
+        <p>
+          JScan is evolving, with new tools and improvements planned
+          as the platform develops.
+        </p>
+      </article>
+
+    </div>
+  </section>
+
+  <!-- VALUES -->
+  <section class="about-section">
+    <div class="about-section-heading">
+      <span class="eyebrow">WHAT GUIDES US</span>
+      <h2>Built around what matters.</h2>
+    </div>
+
+    <div class="about-grid">
+
+      <article class="about-card">
+        <div class="about-card-icon">◈</div>
+        <h3>Simplicity</h3>
+        <p>
+          Technology should make life easier, not more complicated.
+          We aim to keep our tools straightforward and accessible.
+        </p>
+      </article>
+
+      <article class="about-card">
+        <div class="about-card-icon">◇</div>
+        <h3>Accessibility</h3>
+        <p>
+          We want useful digital productivity tools to be accessible
+          to people with different needs and levels of experience.
+        </p>
+      </article>
+
+      <article class="about-card">
+        <div class="about-card-icon">✧</div>
+        <h3>Innovation</h3>
+        <p>
+          We continue exploring better ways to solve everyday digital
+          problems through useful technology.
+        </p>
+      </article>
+
+      <article class="about-card">
+        <div class="about-card-icon">⬡</div>
+        <h3>Growth</h3>
+        <p>
+          JScan is a growing project. We value feedback, learning
+          and continuous improvement.
+        </p>
+      </article>
+
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="about-cta">
+    <h2>Your digital workspace starts here.</h2>
+    <p>
+      Discover tools that help you handle everyday digital tasks
+      and make more room for the work that matters.
+    </p>
+    <a href="tools.html" class="btn">
+      Explore JScan →
+    </a>
+  </section>
+
+</main>
+
+<footer class="site-footer wrap">
+  <a class="brand" href="index.html">
+    <span class="brand-mark">J</span>
+    <span>JScan</span>
+  </a>
+  <span>© 2026 JScan</span>
+</footer>
+
+<script src="js/main.js"></script>
+
+</body>
+</html>

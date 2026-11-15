@@ -1,0 +1,239 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Word to PDF — JScan</title>
+    <link rel="stylesheet" href="css/style.css">
+
+    <style>
+        .word-container {
+            width: 100%;
+            margin: 30px 0;
+        }
+
+        .word-upload {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            box-sizing: border-box;
+            width: 100%;
+            min-height: 300px;
+            padding: 40px 20px;
+            border: 2px dashed var(--border);
+            border-radius: 16px;
+            text-align: center;
+            background: var(--surface);
+            cursor: pointer;
+            transition: border-color .2s ease;
+        }
+
+        .word-upload:hover {
+            border-color: var(--blue);
+        }
+
+        .word-upload input {
+            display: none !important;
+        }
+
+        .word-upload h2,
+        .word-upload p {
+            margin: 0;
+        }
+
+        .upload-icon {
+            font-size: 42px;
+            color: var(--blue);
+        }
+
+        .word-status {
+            width: 100%;
+            margin-top: 15px;
+            text-align: center;
+            color: var(--text-muted);
+        }
+
+        .word-preview {
+            display: none;
+            margin-top: 25px;
+        }
+
+        .word-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin: 20px 0;
+        }
+
+        .word-controls input {
+            box-sizing: border-box;
+            flex: 1;
+            min-width: 200px;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--surface);
+            color: var(--text);
+        }
+
+        .document-preview {
+            width: 100%;
+            max-height: 850px;
+            overflow: auto;
+            background: #e5e7eb;
+            border-radius: 10px;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+
+        .document-preview .docx-wrapper {
+            background: #e5e7eb !important;
+            padding: 20px 0;
+        }
+
+        .document-preview .docx {
+            margin: 0 auto 20px !important;
+            box-shadow: 0 2px 12px rgba(0,0,0,.12);
+        }
+
+        .word-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        @media(max-width: 600px) {
+            .word-upload {
+                min-height: 260px;
+                padding: 30px 15px;
+            }
+
+            .document-preview {
+                padding: 5px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header class="site-header">
+    <a class="brand" href="index.html">
+        <span class="brand-mark">J</span>
+        <span>JScan</span>
+    </a>
+
+    <nav class="main-nav">
+        <a href="index.html">Home</a>
+        <a class="active" href="tools.html">Explore tools</a>
+        <a href="about.html">About</a>
+        <a href="contact.html">Contact</a>
+    </nav>
+
+    <div class="header-actions">
+        <button class="icon-btn" data-theme-toggle aria-label="Toggle theme">☾</button>
+        <a class="btn btn-ghost" href="login.html">Log in</a>
+        <a class="btn btn-primary" href="register.html">Create account</a>
+    </div>
+</header>
+
+<main class="wrap page-main">
+
+    <div class="breadcrumb">
+        <a href="tools.html">All tools</a>
+        <span>/</span>
+        <span>Word to PDF</span>
+    </div>
+
+    <div class="page-intro">
+        <span class="eyebrow">JSCAN WORKSPACE</span>
+        <h1>Word to PDF</h1>
+        <p>Convert Microsoft Word documents into PDF files.</p>
+    </div>
+
+    <section class="panel">
+        <div class="word-container">
+
+            <label class="word-upload" for="wordFileInput">
+                <div class="upload-icon">📄</div>
+                <h2>Select a Word document</h2>
+                <p>Choose a .docx file from your device</p>
+
+                <span class="btn btn-primary">
+                    Choose Word Document
+                </span>
+
+                <input
+                    type="file"
+                    id="wordFileInput"
+                    accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                >
+            </label>
+
+            <div class="word-status" id="wordStatus">
+                No document selected.
+            </div>
+
+            <div class="word-preview" id="wordPreviewArea">
+
+                <h2>Document preview</h2>
+                <p>Review your document before downloading it as a PDF.</p>
+
+                <div class="word-controls">
+                    <input
+                        type="text"
+                        id="wordPdfFilename"
+                        placeholder="Enter PDF filename"
+                        value="JScan-Converted-Document"
+                    >
+                </div>
+
+                <div
+                    class="document-preview"
+                    id="wordDocumentPreview">
+                </div>
+
+                <div class="word-actions">
+                    <button
+                        type="button"
+                        class="btn btn-primary"
+                        id="wordDownloadBtn"
+                        disabled>
+                        Download PDF
+                    </button>
+
+                    <button
+                        type="button"
+                        class="btn btn-ghost"
+                        id="wordResetBtn">
+                        Remove Document
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<footer class="site-footer wrap">
+    <a class="brand" href="index.html">
+        <span class="brand-mark">J</span>
+        <span>JScan</span>
+    </a>
+
+    <span>© 2026 JScan</span>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://unpkg.com/docx-preview@0.3.6/dist/docx-preview.min.js"></script>
+
+<script src="js/main.js"></script>
+<script src="js/word-to-pdf.js?v=2"></script>
+
+</body>
+</html>

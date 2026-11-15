@@ -1,0 +1,516 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Images to PDF — JScan</title>
+
+    <link rel="stylesheet" href="css/style.css">
+
+    <style>
+        /* =====================================
+           IMAGES TO PDF PAGE
+        ===================================== */
+
+        .images-pdf-container {
+            width: 100%;
+            max-width: 1000px;
+            margin: 35px auto;
+        }
+
+        .images-pdf-container,
+        .images-pdf-container * {
+            box-sizing: border-box;
+        }
+
+        /* Upload section */
+
+        .images-pdf-container .upload-area {
+            all: unset;
+            display: flex !important;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            min-height: 230px;
+            padding: 35px 20px;
+            box-sizing: border-box;
+            border: 2px dashed var(--border-color, #64748b);
+            border-radius: 14px;
+            text-align: center;
+            cursor: pointer;
+            transition: .2s ease;
+            color: inherit;
+            background: transparent;
+        }
+
+        .images-pdf-container .upload-area:hover {
+            border-color: #2563eb;
+            background: rgba(37, 99, 235, .05);
+        }
+
+        .images-pdf-container .upload-area input[type="file"] {
+            display: none !important;
+        }
+
+        .images-pdf-container .upload-icon {
+            font-size: 44px;
+            line-height: 1;
+            margin-bottom: 18px;
+        }
+
+        .images-pdf-container .upload-area h3 {
+            display: block;
+            margin: 0 0 10px;
+            font-size: 19px;
+            font-weight: 700;
+        }
+
+        .images-pdf-container .upload-area p {
+            display: block;
+            margin: 0 0 12px;
+            font-size: 15px;
+        }
+
+        .images-pdf-container .upload-area small {
+            display: block;
+            font-size: 12px;
+            opacity: .7;
+        }
+
+        /* Toolbar */
+
+        .images-pdf-container .image-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin: 24px 0;
+            width: 100%;
+        }
+
+        .images-pdf-container .image-settings {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .images-pdf-container .image-settings label {
+            display: inline-block !important;
+            margin: 0;
+            font-size: 14px;
+        }
+
+        .images-pdf-container .image-settings select,
+        .images-pdf-container .filename-input {
+            height: 46px;
+            padding: 0 13px;
+            border: 1px solid var(--border-color, #334155);
+            border-radius: 9px;
+            background: var(--card-bg, transparent);
+            color: inherit;
+            font: inherit;
+            outline: none;
+        }
+
+        .images-pdf-container .image-settings select {
+            min-width: 190px;
+            cursor: pointer;
+        }
+
+        .images-pdf-container .image-settings select option {
+            color: #111827;
+            background: #ffffff;
+        }
+
+        .images-pdf-container .filename-input {
+            width: 260px;
+            max-width: 100%;
+        }
+
+        /* Image summary */
+
+        .images-pdf-container .image-summary {
+            margin: 18px 0;
+            font-size: 14px;
+            opacity: .8;
+        }
+
+        /* Image grid */
+
+        .images-pdf-container .image-list {
+            display: grid;
+            grid-template-columns: repeat(
+                auto-fill,
+                minmax(180px, 1fr)
+            );
+            gap: 16px;
+            width: 100%;
+        }
+
+        .images-pdf-container .image-card {
+            min-width: 0;
+            overflow: hidden;
+            border: 1px solid var(--border-color, #334155);
+            border-radius: 12px;
+            background: var(--card-bg, transparent);
+        }
+
+        .images-pdf-container .image-card img {
+            display: block;
+            width: 100%;
+            height: 165px;
+            object-fit: contain;
+            background: #e2e8f0;
+        }
+
+        .images-pdf-container .image-card-info {
+            padding: 12px;
+        }
+
+        .images-pdf-container .image-name {
+            font-size: 13px;
+            overflow-wrap: anywhere;
+            margin-bottom: 6px;
+        }
+
+        .images-pdf-container .image-meta {
+            font-size: 12px;
+            opacity: .7;
+        }
+
+        .images-pdf-container .image-actions {
+            display: flex;
+            gap: 7px;
+            margin-top: 12px;
+        }
+
+        .images-pdf-container .image-actions button {
+            flex: 1;
+            min-width: 0;
+            padding: 8px 5px;
+            border: 1px solid var(--border-color, #334155);
+            border-radius: 6px;
+            background: transparent;
+            color: inherit;
+            cursor: pointer;
+        }
+
+        .images-pdf-container .image-actions button:disabled {
+            opacity: .35;
+            cursor: not-allowed;
+        }
+
+        .images-pdf-container .image-actions button:hover:not(:disabled) {
+            background: rgba(37, 99, 235, .12);
+        }
+
+        .images-pdf-container .image-actions .remove-image:hover {
+            color: #ef4444;
+        }
+
+        /* Empty state */
+
+        .images-pdf-container .empty-images {
+            grid-column: 1 / -1;
+            width: 100%;
+            padding: 35px 15px;
+            border: 1px solid var(--border-color, #334155);
+            border-radius: 12px;
+            text-align: center;
+            opacity: .7;
+        }
+
+        /* Action buttons */
+
+        .images-pdf-container .conversion-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .images-pdf-container .conversion-actions button {
+            min-height: 44px;
+        }
+
+        .images-pdf-container .image-status {
+            margin-top: 16px;
+            font-size: 14px;
+        }
+
+        /* Mobile */
+
+        @media (max-width: 650px) {
+            .images-pdf-container {
+                margin: 25px auto;
+            }
+
+            .images-pdf-container .upload-area {
+                min-height: 200px;
+                padding: 25px 15px;
+            }
+
+            .images-pdf-container .image-toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .images-pdf-container .image-settings {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .images-pdf-container .image-settings select,
+            .images-pdf-container .filename-input {
+                width: 100%;
+                max-width: 100%;
+            }
+
+            .images-pdf-container .image-list {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 380px) {
+            .images-pdf-container .image-list {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- JSCAN SHARED HEADER -->
+
+    <header class="site-header">
+
+        <a class="brand" href="index.html">
+            <span class="brand-mark">J</span>
+            <span>JScan</span>
+        </a>
+
+        <button
+            class="menu-toggle"
+            type="button"
+            aria-label="Open navigation menu"
+            aria-controls="mainNavigation"
+            aria-expanded="false"
+        >☰</button>
+
+        <nav class="main-nav" id="mainNavigation">
+            <a href="index.html">Home</a>
+            <a class="active" href="tools.html">Explore tools</a>
+            <a href="about.html">About</a>
+            <a href="contact.html">Contact</a>
+        </nav>
+
+        <div class="header-actions">
+
+            <button
+                class="icon-btn"
+                data-theme-toggle
+                aria-label="Toggle theme"
+                type="button"
+            >☾</button>
+
+            <a class="btn btn-ghost" href="login.html">
+                Log in
+            </a>
+
+            <a class="btn btn-primary" href="register.html">
+                Create account
+            </a>
+
+        </div>
+
+    </header>
+
+
+    <!-- MAIN CONTENT -->
+
+    <main class="wrap page-main">
+
+        <div class="breadcrumb">
+            <a href="index.html">Home</a>
+            /
+            <a href="tools.html">Explore tools</a>
+            /
+            Images to PDF
+        </div>
+
+        <section class="page-intro">
+
+            <span class="eyebrow">PDF TOOLS</span>
+
+            <h1>Images to PDF</h1>
+
+            <p>
+                Combine multiple images of different dimensions into one PDF document.
+                Upload, arrange and convert your images easily.
+            </p>
+
+        </section>
+
+
+        <!-- CONVERTER -->
+
+        <section class="images-pdf-container">
+
+            <div class="panel">
+
+                <!-- IMAGE UPLOAD -->
+
+                <label class="upload-area" for="imagesInput">
+
+                    <input
+                        type="file"
+                        id="imagesInput"
+                        accept="image/jpeg,image/png,image/webp"
+                        multiple
+                    >
+
+                    <span class="upload-icon">🖼️</span>
+
+                    <h3>Select your images</h3>
+
+                    <p>
+                        Click here or drag and drop images
+                    </p>
+
+                    <small>
+                        JPG, JPEG, PNG and WebP · Maximum 100 images
+                    </small>
+
+                </label>
+
+
+                <!-- SETTINGS -->
+
+                <div class="image-toolbar">
+
+                    <div class="image-settings">
+
+                        <label for="pageSize">
+                            PDF page size:
+                        </label>
+
+                        <select id="pageSize">
+
+                            <option value="a4">A4</option>
+
+                            <option value="letter">Letter</option>
+
+                            <option value="original">
+                                Original image size
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <input
+                        type="text"
+                        id="pdfFilename"
+                        class="filename-input"
+                        value="JScan-Images"
+                        placeholder="Enter PDF filename"
+                    >
+
+                </div>
+
+
+                <!-- IMAGE COUNT -->
+
+                <div class="image-summary" id="imageSummary">
+                    No images selected.
+                </div>
+
+
+                <!-- IMAGE PREVIEW -->
+
+                <div id="imageList" class="image-list">
+
+                    <div class="empty-images">
+                        Your uploaded images will appear here.
+                    </div>
+
+                </div>
+
+
+                <!-- ACTION BUTTONS -->
+
+                <div class="conversion-actions">
+
+                    <button
+                        type="button"
+                        class="btn btn-primary"
+                        id="convertImagesBtn"
+                        disabled
+                    >
+                        Convert to PDF
+                    </button>
+
+                    <button
+                        type="button"
+                        class="btn btn-ghost"
+                        id="clearImagesBtn"
+                        disabled
+                    >
+                        Clear All
+                    </button>
+
+                </div>
+
+
+                <!-- STATUS -->
+
+                <div
+                    id="imageStatus"
+                    class="image-status"
+                    aria-live="polite"
+                ></div>
+
+            </div>
+
+
+            <p class="fine-print">
+                Your images are processed directly in your browser.
+                They are not uploaded to JScan's server.
+            </p>
+
+        </section>
+
+    </main>
+
+
+    <!-- FOOTER -->
+
+    <footer class="site-footer wrap">
+
+        <div class="brand">
+            <span class="brand-mark">J</span>
+            <span>JScan</span>
+        </div>
+
+        <p>© 2026 JScan. All rights reserved.</p>
+
+    </footer>
+
+
+    <!-- LIBRARIES AND JAVASCRIPT -->
+
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+
+    <script src="js/main.js"></script>
+
+    <script src="js/images-to-pdf.js"></script>
+
+</body>
+</html>

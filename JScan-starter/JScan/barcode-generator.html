@@ -1,0 +1,424 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Barcode Generator — JScan</title>
+
+    <meta name="description" content="Generate and customize barcodes with JScan.">
+
+    <link rel="stylesheet" href="css/style.css">
+
+    <style>
+        .barcode-customization {
+            margin-top: 28px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+        }
+
+        .barcode-customization h2 {
+            margin-bottom: 18px;
+        }
+
+        .barcode-color-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 20px;
+        }
+
+        .barcode-color-field {
+            min-width: 0;
+        }
+
+        .barcode-color-field label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .color-input-wrap {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .color-input-wrap input[type="color"] {
+            width: 46px;
+            height: 43px;
+            padding: 3px;
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            background: var(--surface);
+            cursor: pointer;
+        }
+
+        .color-input-wrap input[type="text"] {
+            flex: 1;
+            min-width: 0;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        .swatches {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 9px;
+            margin-top: 14px;
+        }
+
+        .swatches button {
+            width: 28px;
+            height: 28px;
+            padding: 0;
+            border-radius: 50%;
+            border: 3px solid var(--surface);
+            outline: 1px solid var(--border);
+            cursor: pointer;
+        }
+
+        .swatches button.selected {
+            outline: 2px solid var(--blue);
+        }
+
+        .barcode-preview {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            min-height: 170px;
+            margin: 18px 0;
+            padding: 20px;
+            overflow-x: auto;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .barcode-preview svg {
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }
+
+        .barcode-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 18px;
+        }
+
+        #contrastNote {
+            display: none;
+            margin-top: 14px;
+            font-size: 13px;
+            color: #d97706;
+        }
+
+        @media (max-width: 600px) {
+            .barcode-color-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .barcode-actions {
+                flex-direction: column;
+            }
+
+            .barcode-actions .btn {
+                width: 100%;
+            }
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <!-- HEADER -->
+    <header class="site-header">
+
+        <a class="brand" href="index.html">
+            <span class="brand-mark">J</span>
+            <span>JScan</span>
+        </a>
+
+        <button
+            class="menu-toggle"
+            type="button"
+            aria-label="Open navigation menu"
+            aria-expanded="false"
+            aria-controls="mainNavigation">
+            ☰
+        </button>
+
+        <nav class="main-nav" id="mainNavigation">
+            <a href="index.html">Home</a>
+            <a class="active" href="tools.html">Explore tools</a>
+            <a href="about.html">About</a>
+            <a href="contact.html">Contact</a>
+        </nav>
+
+        <div class="header-actions">
+
+            <button
+                class="icon-btn"
+                data-theme-toggle
+                aria-label="Toggle theme">
+                ☾
+            </button>
+
+            <a class="btn btn-ghost" href="login.html">Log in</a>
+
+            <a class="btn btn-primary" href="register.html">
+                Create account
+            </a>
+
+        </div>
+
+    </header>
+
+
+    <!-- MAIN -->
+    <main class="wrap page-main">
+
+        <div class="breadcrumb">
+            <a href="tools.html">All tools</a>
+            <span>/</span>
+            <span>Barcode Generator</span>
+        </div>
+
+        <div class="page-intro">
+
+            <span class="eyebrow">JSCAN WORKSPACE</span>
+
+            <h1>Barcode Generator</h1>
+
+            <p>
+                Generate and customize clean, readable barcodes
+                for products, labels and records.
+            </p>
+
+        </div>
+
+
+        <section class="panel">
+
+            <!-- BARCODE INPUT -->
+            <div class="form-group">
+
+                <label for="barcodeText">
+                    Enter your text or number
+                </label>
+
+                <input
+                    type="text"
+                    id="barcodeText"
+                    placeholder="e.g. JSCAN2026"
+                    autocomplete="off"
+                >
+
+                <small>
+                    Enter the information you want to convert into a barcode.
+                </small>
+
+            </div>
+
+
+            <!-- BARCODE FORMAT -->
+            <div class="form-group">
+
+                <label for="barcodeFormat">
+                    Barcode format
+                </label>
+
+                <select id="barcodeFormat">
+
+                    <option value="CODE128">Code 128</option>
+                    <option value="CODE39">Code 39</option>
+                    <option value="EAN13">EAN-13</option>
+                    <option value="UPC">UPC-A</option>
+
+                </select>
+
+            </div>
+
+
+            <!-- COLOUR CUSTOMIZATION -->
+            <div class="barcode-customization">
+
+                <h2>Customize your barcode</h2>
+
+                <div class="barcode-color-grid">
+
+                    <!-- BARCODE COLOUR -->
+                    <div class="barcode-color-field">
+
+                        <label for="qrColor">Barcode colour</label>
+
+                        <div class="color-input-wrap">
+
+                            <input
+                                type="color"
+                                id="qrColor"
+                                value="#111827"
+                                aria-label="Choose barcode colour"
+                            >
+
+                            <input
+                                type="text"
+                                id="qrHex"
+                                value="#111827"
+                                maxlength="7"
+                                aria-label="Barcode colour HEX code"
+                            >
+
+                        </div>
+
+                        <div class="swatches" id="swatches">
+
+                            <button type="button" data-color="#111827"
+                                style="background:#111827"
+                                class="selected" aria-label="Black"></button>
+
+                            <button type="button" data-color="#2563EB"
+                                style="background:#2563EB"
+                                aria-label="Blue"></button>
+
+                            <button type="button" data-color="#16A34A"
+                                style="background:#16A34A"
+                                aria-label="Green"></button>
+
+                            <button type="button" data-color="#DC2626"
+                                style="background:#DC2626"
+                                aria-label="Red"></button>
+
+                            <button type="button" data-color="#EA580C"
+                                style="background:#EA580C"
+                                aria-label="Orange"></button>
+
+                            <button type="button" data-color="#9333EA"
+                                style="background:#9333EA"
+                                aria-label="Purple"></button>
+
+                            <button type="button" data-color="#DB2777"
+                                style="background:#DB2777"
+                                aria-label="Pink"></button>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- BACKGROUND COLOUR -->
+                    <div class="barcode-color-field">
+
+                        <label for="bgColor">Background colour</label>
+
+                        <div class="color-input-wrap">
+
+                            <input
+                                type="color"
+                                id="bgColor"
+                                value="#FFFFFF"
+                                aria-label="Choose background colour"
+                            >
+
+                            <input
+                                type="text"
+                                id="bgHex"
+                                value="#FFFFFF"
+                                maxlength="7"
+                                aria-label="Background colour HEX code"
+                            >
+
+                        </div>
+
+                        <small>
+                            Choose a background that contrasts with your barcode.
+                        </small>
+
+                    </div>
+
+                </div>
+
+                <p id="contrastNote" role="status" aria-live="polite">
+                    Low contrast may make your barcode difficult to scan.
+                    Consider choosing darker bars and a lighter background.
+                </p>
+
+            </div>
+
+
+            <!-- GENERATE -->
+            <button
+                type="button"
+                class="btn btn-primary"
+                id="generateBarcodeBtn">
+
+                Generate Barcode
+
+            </button>
+
+
+            <p id="barcodeMessage" role="status" aria-live="polite"></p>
+
+
+            <!-- PREVIEW -->
+            <div class="barcode-result" id="barcodeResult" hidden>
+
+                <h2>Your Barcode</h2>
+
+                <div class="barcode-preview" id="barcodePreview">
+
+                    <svg id="barcode"></svg>
+
+                </div>
+
+                <div class="barcode-actions">
+
+                    <button
+                        type="button"
+                        class="btn btn-primary"
+                        id="downloadPngBtn">
+                        Download PNG
+                    </button>
+
+                    <button
+                        type="button"
+                        class="btn btn-ghost"
+                        id="downloadSvgBtn">
+                        Download SVG
+                    </button>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- FOOTER -->
+    <footer class="site-footer wrap">
+
+        <a class="brand" href="index.html">
+            <span class="brand-mark">J</span>
+            <span>JScan</span>
+        </a>
+
+        <span>© 2026 JScan</span>
+
+    </footer>
+
+
+    <!-- BARCODE LIBRARY -->
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+
+    <!-- JSCAN SCRIPTS -->
+    <script src="js/barcode-generator.js"></script>
+    <script src="js/main.js"></script>
+
+</body>
+</html>

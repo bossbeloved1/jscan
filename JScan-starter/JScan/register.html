@@ -1,0 +1,317 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Create your free account — JScan</title>
+
+    <meta name="description" content="Create your free JScan account and access your personal digital workspace.">
+
+    <link rel="stylesheet" href="css/style.css">
+
+    <style>
+        .password-strength {
+            margin-top: 10px;
+        }
+
+        .strength-track {
+            height: 7px;
+            background: var(--border, #e5e7eb);
+            border-radius: 20px;
+            overflow: hidden;
+            margin: 8px 0;
+        }
+
+        .strength-fill {
+            height: 100%;
+            width: 0;
+            border-radius: 20px;
+            transition: width 0.25s ease, background 0.25s ease;
+        }
+
+        .strength-label {
+            font-size: 12px;
+            color: var(--text-muted, #6b7280);
+        }
+
+        .password-requirements {
+            list-style: none;
+            padding: 0;
+            margin: 12px 0 20px;
+            font-size: 12px;
+            display: grid;
+            gap: 7px;
+        }
+
+        .password-requirements li {
+            color: var(--text-muted, #6b7280);
+        }
+
+        .password-requirements li::before {
+            content: "○";
+            margin-right: 8px;
+        }
+
+        .password-requirements li.met {
+            color: #16a34a;
+        }
+
+        .password-requirements li.met::before {
+            content: "✓";
+        }
+    </style>
+</head>
+
+<body>
+
+<header class="site-header">
+
+    <a class="brand" href="index.html">
+        <span class="brand-mark">J</span>
+        <span>JScan</span>
+    </a>
+
+    <nav class="main-nav">
+        <a href="index.html">Home</a>
+        <a href="tools.html">Explore tools</a>
+        <a href="about.html">About</a>
+        <a href="contact.html">Contact</a>
+    </nav>
+
+    <div class="header-actions">
+        <button class="icon-btn" data-theme-toggle aria-label="Toggle theme">☾</button>
+        <a class="btn btn-ghost" href="login.html">Log in</a>
+        <a class="btn btn-primary" href="register.html">Create account</a>
+    </div>
+
+</header>
+
+<main class="wrap page-main">
+
+    <div class="breadcrumb">
+        <a href="index.html">Home</a>
+        <span>/</span>
+        <span>Create your free account</span>
+    </div>
+
+    <div class="page-intro">
+        <span class="eyebrow">JSCAN WORKSPACE</span>
+        <h1>Create your free account</h1>
+        <p>Create an account to save your work and access your workspace.</p>
+    </div>
+
+    <section class="panel">
+
+        <div class="auth-placeholder">
+
+            <div style="text-align:center; margin-bottom:25px;">
+                <div style="font-size:42px;color:var(--blue)">✦</div>
+                <h2>Join JScan today</h2>
+                <p>Create your free account in a few steps.</p>
+            </div>
+
+            <form id="registerForm">
+
+                <label class="field-label" for="fullName">Full name</label>
+
+                <input
+                    type="text"
+                    id="fullName"
+                    name="fullName"
+                    placeholder="Enter your full name"
+                    autocomplete="name"
+                    maxlength="100"
+                    required
+                >
+
+                <label class="field-label" for="email">Email address</label>
+
+                <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    placeholder="you@example.com"
+                    autocomplete="email"
+                    required
+                >
+
+                <label class="field-label" for="password">Password</label>
+
+                <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    placeholder="Create a password"
+                    autocomplete="new-password"
+                    minlength="8"
+                    required
+                >
+
+                <!-- PASSWORD STRENGTH -->
+                <div class="password-strength">
+
+                    <div class="strength-track">
+                        <div id="strengthFill" class="strength-fill"></div>
+                    </div>
+
+                    <p id="strengthLabel" class="strength-label">
+                        Password strength: Not entered
+                    </p>
+
+                </div>
+
+                <ul class="password-requirements">
+                    <li id="reqLength">At least 8 characters</li>
+                    <li id="reqUpper">One uppercase letter</li>
+                    <li id="reqLower">One lowercase letter</li>
+                    <li id="reqNumber">One number</li>
+                    <li id="reqSpecial">One special character</li>
+                </ul>
+
+                <label class="field-label" for="confirmPassword">
+                    Confirm password
+                </label>
+
+                <input
+                    type="password"
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    placeholder="Enter your password again"
+                    autocomplete="new-password"
+                    minlength="8"
+                    required
+                >
+
+                <label style="display:flex;align-items:center;gap:8px;margin:12px 0;cursor:pointer;">
+                    <input
+                        type="checkbox"
+                        id="showPassword"
+                        style="width:auto;"
+                    >
+                    <span class="fine-print">Show passwords</span>
+                </label>
+
+                <p
+                    id="registerMessage"
+                    class="fine-print"
+                    role="status"
+                    aria-live="polite"
+                ></p>
+
+                <button
+                    type="submit"
+                    class="btn btn-primary btn-full"
+                    id="registerBtn"
+                >
+                    Create free account
+                </button>
+
+            </form>
+
+            <p class="fine-print" style="text-align:center;margin-top:20px;">
+                Already have an account?
+                <a href="login.html">Log in</a>
+            </p>
+
+            <p class="fine-print" style="text-align:center;">
+                JScan is free to use. No payment required.
+            </p>
+
+        </div>
+
+    </section>
+
+</main>
+
+<footer class="site-footer wrap">
+
+    <a class="brand" href="index.html">
+        <span class="brand-mark">J</span>
+        <span>JScan</span>
+    </a>
+
+    <span>© 2026 JScan. Your digital workspace.</span>
+
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase.js"></script>
+<script src="js/main.js"></script>
+<script src="js/register.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+    const password = document.getElementById('password');
+    const confirmPassword = document.getElementById('confirmPassword');
+    const showPassword = document.getElementById('showPassword');
+
+    const strengthFill = document.getElementById('strengthFill');
+    const strengthLabel = document.getElementById('strengthLabel');
+
+    const requirements = {
+        length: document.getElementById('reqLength'),
+        upper: document.getElementById('reqUpper'),
+        lower: document.getElementById('reqLower'),
+        number: document.getElementById('reqNumber'),
+        special: document.getElementById('reqSpecial')
+    };
+
+    function updateStrength() {
+
+        const value = password.value;
+
+        const checks = {
+            length: value.length >= 8,
+            upper: /[A-Z]/.test(value),
+            lower: /[a-z]/.test(value),
+            number: /[0-9]/.test(value),
+            special: /[^A-Za-z0-9]/.test(value)
+        };
+
+        Object.keys(checks).forEach(key => {
+            requirements[key].classList.toggle('met', checks[key]);
+        });
+
+        const score = Object.values(checks).filter(Boolean).length;
+
+        const levels = [
+            { label: 'Not entered', width: '0%', color: 'transparent' },
+            { label: 'Very weak', width: '20%', color: '#ef4444' },
+            { label: 'Weak', width: '40%', color: '#f97316' },
+            { label: 'Fair', width: '60%', color: '#eab308' },
+            { label: 'Good', width: '80%', color: '#3b82f6' },
+            { label: 'Strong', width: '100%', color: '#16a34a' }
+        ];
+
+        const level = value.length === 0
+            ? levels[0]
+            : levels[score];
+
+        strengthFill.style.width = level.width;
+        strengthFill.style.background = level.color;
+
+        strengthLabel.textContent =
+            'Password strength: ' + level.label;
+    }
+
+    password.addEventListener('input', updateStrength);
+
+    if (showPassword) {
+        showPassword.addEventListener('change', () => {
+
+            const type = showPassword.checked ? 'text' : 'password';
+
+            password.type = type;
+            confirmPassword.type = type;
+
+        });
+    }
+
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,659 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel to Word & PDF — JScan</title>
+    <link rel="stylesheet" href="css/style.css">
+
+    <style>
+        .word-excel-upload {
+            display: block;
+            border: 2px dashed var(--border);
+            border-radius: 16px;
+            padding: 38px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: .2s;
+        }
+
+        .word-excel-upload:hover,
+        .word-excel-upload.drag-over {
+            border-color: var(--blue);
+            background: var(--surface);
+        }
+
+        .word-excel-upload input { display: none; }
+
+        .word-excel-upload-icon {
+            font-size: 42px;
+            color: var(--blue);
+            margin-bottom: 12px;
+        }
+
+        .word-excel-upload h3 { margin-bottom: 8px; }
+
+        .word-excel-upload p {
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        /* FILE CARDS AND REAL THUMBNAILS */
+        .word-excel-files {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+            gap: 15px;
+            margin-top: 22px;
+        }
+
+        .word-excel-file {
+            border: 1px solid var(--border);
+            border-radius: 13px;
+            overflow: hidden;
+            background: var(--surface);
+            min-width: 0;
+        }
+
+        .word-excel-thumbnail {
+            height: 180px;
+            background: #f1f5f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border);
+            padding: 8px;
+        }
+
+        .word-excel-thumbnail canvas {
+            display: block;
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,.12);
+        }
+
+        .word-excel-thumbnail-placeholder {
+            color: #64748b;
+            font-size: 13px;
+            text-align: center;
+            padding: 15px;
+        }
+
+        .word-excel-file-info {
+            padding: 12px;
+            display: grid;
+            gap: 6px;
+        }
+
+        .word-excel-file-info strong {
+            font-size: 13px;
+            overflow-wrap: anywhere;
+        }
+
+        .word-excel-file-info small {
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .word-excel-file-actions {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 0 12px 12px;
+        }
+
+        .word-excel-file-actions button {
+            border: 0;
+            background: transparent;
+            color: var(--blue);
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .word-excel-file-actions .remove { color: #ef4444; }
+
+        /* CONVERSION */
+        .word-excel-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 22px;
+        }
+
+        .word-excel-actions button:disabled {
+            opacity: .5;
+            cursor: not-allowed;
+        }
+
+        .word-excel-convert-options {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+            margin-top: 22px;
+        }
+
+        .word-excel-convert-options button {
+            min-height: 52px;
+            font-size: 15px;
+        }
+
+        .word-excel-convert-options button:disabled {
+            opacity: .5;
+            cursor: not-allowed;
+        }
+
+        .word-excel-status {
+            margin-top: 18px;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .word-excel-status.success { color: #16a34a; }
+        .word-excel-status.error { color: #ef4444; }
+
+        /* RESULTS */
+        .word-excel-results {
+            display: grid;
+            gap: 12px;
+            margin-top: 25px;
+        }
+
+        .word-excel-result {
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .word-excel-result-details {
+            display: grid;
+            gap: 5px;
+            min-width: 0;
+        }
+
+        .word-excel-result-details strong { overflow-wrap: anywhere; }
+
+        .word-excel-result-details small {
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .word-excel-result-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        /* VIEWER AND PREVIEW */
+        .word-excel-viewer,
+        .word-excel-preview {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: rgba(0, 0, 0, .75);
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .word-excel-viewer.active,
+        .word-excel-preview.active {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .word-excel-viewer-box,
+        .word-excel-preview-box {
+            width: min(100%, 950px);
+            background: var(--bg);
+            border-radius: 14px;
+            padding: 18px;
+            margin: auto;
+        }
+
+        .word-excel-viewer-header,
+        .word-excel-preview-heading {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .word-excel-viewer-header button,
+        .word-excel-preview-heading button {
+            border: 0;
+            background: transparent;
+            cursor: pointer;
+            font-size: 24px;
+            color: var(--text);
+        }
+
+        .word-excel-viewer-content,
+        .word-excel-preview-content {
+            background: white;
+            color: #222;
+            padding: 25px;
+            border-radius: 10px;
+            overflow: auto;
+            max-height: 75vh;
+        }
+
+        /* WORD EDITOR */
+        .word-excel-editor {
+            display: none;
+            margin-top: 30px;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            overflow: hidden;
+        }
+
+        .word-excel-editor.active { display: block; }
+
+        .word-excel-editor-header {
+            padding: 18px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .word-excel-editor-header h2 {
+            font-size: 19px;
+            margin: 0;
+        }
+
+        .word-excel-editor-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+            background: var(--surface);
+        }
+
+        .word-excel-editor-toolbar button,
+        .word-excel-editor-toolbar select,
+        .word-excel-editor-toolbar input {
+            min-height: 36px;
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            background: var(--bg);
+            color: var(--text);
+            padding: 6px 9px;
+        }
+
+        .word-excel-editor-toolbar button {
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .word-excel-editor-toolbar button:hover {
+            border-color: var(--blue);
+            color: var(--blue);
+        }
+
+        .word-excel-editor-toolbar input[type="file"] {
+            max-width: 190px;
+            font-size: 12px;
+        }
+
+        .word-excel-editor-toolbar label {
+            font-size: 12px;
+            color: var(--muted);
+            display: grid;
+            gap: 4px;
+        }
+
+        .word-excel-name-area {
+            padding: 15px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .word-excel-rename {
+            width: 100%;
+            max-width: 350px;
+            padding: 11px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        .word-excel-document-area {
+            background: var(--surface);
+            padding: 25px 12px;
+            overflow: auto;
+            min-height: 450px;
+        }
+
+        .word-excel-document {
+            background: white;
+            color: #222;
+            width: min(100%, 794px);
+            min-height: 1050px;
+            margin: auto;
+            padding: 65px 55px;
+            box-shadow: 0 2px 12px rgba(0,0,0,.10);
+            outline: none;
+            font-family: Arial, sans-serif;
+            font-size: 12pt;
+            line-height: 1.5;
+            overflow-wrap: anywhere;
+        }
+
+        .word-excel-document:focus {
+            outline: 2px solid var(--blue);
+            outline-offset: 2px;
+        }
+
+        .word-excel-document table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 12px 0;
+        }
+
+        .word-excel-document th,
+        .word-excel-document td {
+            border: 1px solid #999;
+            padding: 7px;
+            text-align: left;
+        }
+
+        .word-excel-document th { background: #e5e7eb; }
+
+        .word-excel-editor-footer {
+            padding: 14px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .word-excel-editor-footer small { color: var(--muted); }
+
+        .word-excel-preview-box { width: min(100%, 1100px); }
+
+        @media(max-width: 600px) {
+            .word-excel-viewer,
+            .word-excel-preview { padding: 8px; }
+
+            .word-excel-editor-toolbar { gap: 6px; }
+
+            .word-excel-document {
+                padding: 25px 18px;
+                min-height: 600px;
+            }
+
+            .word-excel-convert-options {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header class="site-header">
+    <a class="brand" href="index.html">
+        <span class="brand-mark">J</span>
+        <span>JScan</span>
+    </a>
+
+    <nav class="main-nav">
+        <a href="index.html">Home</a>
+        <a class="active" href="tools.html">Explore tools</a>
+        <a href="about.html">About</a>
+        <a href="contact.html">Contact</a>
+    </nav>
+
+    <div class="header-actions">
+        <button class="icon-btn" data-theme-toggle aria-label="Toggle theme">☾</button>
+        <a class="btn btn-ghost" href="login.html">Log in</a>
+        <a class="btn btn-primary" href="register.html">Create account</a>
+    </div>
+</header>
+
+<main class="wrap page-main">
+
+    <div class="breadcrumb">
+        <a href="tools.html">All tools</a>
+        <span>/</span>
+        <span>Excel to Word & PDF</span>
+    </div>
+
+    <div class="page-intro">
+        <span class="eyebrow">JSCAN WORKSPACE</span>
+        <h1>Excel to Word & PDF</h1>
+        <p>Convert your Excel spreadsheets into editable Word documents or PDF files.</p>
+    </div>
+
+    <section class="panel">
+
+        <label class="word-excel-upload" id="ewDropArea" for="ewInput">
+
+            <input
+                type="file"
+                id="ewInput"
+                accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
+                multiple
+            >
+
+            <div class="word-excel-upload-icon">⇧</div>
+
+            <h3>Upload Excel files</h3>
+            <p>Click to browse or drag and drop your files here.</p>
+            <p>Supported formats: XLSX, XLS and CSV</p>
+
+        </label>
+
+        <div class="word-excel-files" id="ewFileList"></div>
+
+        <div class="word-excel-convert-options">
+
+            <button class="btn btn-primary" id="ewConvertWordBtn" type="button" disabled>
+                Convert to Word
+            </button>
+
+            <button class="btn btn-ghost" id="ewConvertPdfBtn" type="button" disabled>
+                Convert to PDF
+            </button>
+
+        </div>
+
+        <div class="word-excel-actions">
+            <button class="btn btn-ghost" id="ewClearBtn" type="button" disabled>
+                Clear all
+            </button>
+        </div>
+
+        <p class="word-excel-status" id="ewStatus" style="display:none" aria-live="polite"></p>
+
+        <div class="word-excel-results" id="ewResults" style="display:none">
+            <h3>Conversion results</h3>
+            <div id="ewResultList"></div>
+        </div>
+
+        <p class="fine-print">
+            Each uploaded Excel file will be converted separately.
+            Choose either Word or PDF conversion using the buttons above.
+            Multiple worksheets are supported.
+        </p>
+
+    </section>
+
+    <!-- WORD DOCUMENT EDITOR -->
+    <section class="word-excel-editor" id="ewEditor">
+
+        <div class="word-excel-editor-header">
+            <div>
+                <h2>Word document editor</h2>
+                <p class="fine-print">
+                    Edit and format your converted document before downloading.
+                </p>
+            </div>
+
+            <button type="button" class="btn btn-ghost" id="ewCloseEditor">
+                Close editor
+            </button>
+        </div>
+
+        <div class="word-excel-name-area">
+            <label for="ewOutputName"><strong>Word file name</strong></label>
+            <input
+                type="text"
+                id="ewOutputName"
+                class="word-excel-rename"
+                placeholder="Enter Word file name"
+            >
+        </div>
+
+        <div class="word-excel-editor-toolbar">
+
+            <label>
+                Font family
+                <select id="ewFontFamily">
+                    <option value="Arial">Arial</option>
+                    <option value="Calibri">Calibri</option>
+                    <option value="Times New Roman">Times New Roman</option>
+                    <option value="Georgia">Georgia</option>
+                    <option value="Verdana">Verdana</option>
+                    <option value="Tahoma">Tahoma</option>
+                    <option value="Courier New">Courier New</option>
+                </select>
+            </label>
+
+            <label>
+                Font size
+                <select id="ewFontSize">
+                    <option value="10pt">10</option>
+                    <option value="11pt">11</option>
+                    <option value="12pt" selected>12</option>
+                    <option value="14pt">14</option>
+                    <option value="16pt">16</option>
+                    <option value="18pt">18</option>
+                    <option value="20pt">20</option>
+                    <option value="24pt">24</option>
+                    <option value="28pt">28</option>
+                    <option value="36pt">36</option>
+                </select>
+            </label>
+
+            <button type="button" data-ew-command="bold" title="Bold">B</button>
+            <button type="button" data-ew-command="italic" title="Italic"><i>I</i></button>
+            <button type="button" data-ew-command="underline" title="Underline"><u>U</u></button>
+
+            <button type="button" data-ew-command="undo" title="Undo">↶</button>
+            <button type="button" data-ew-command="redo" title="Redo">↷</button>
+
+            <button type="button" data-ew-command="justifyLeft" title="Align left">Left</button>
+            <button type="button" data-ew-command="justifyCenter" title="Center">Center</button>
+            <button type="button" data-ew-command="justifyRight" title="Align right">Right</button>
+
+            <button type="button" data-ew-command="insertUnorderedList">• List</button>
+            <button type="button" data-ew-command="insertOrderedList">1. List</button>
+
+            <label>
+                Add custom font
+                <input type="file" id="ewCustomFont" accept=".ttf,.otf,.woff,.woff2">
+            </label>
+
+        </div>
+
+        <div class="word-excel-document-area">
+            <div
+                class="word-excel-document"
+                id="ewDocument"
+                contenteditable="true"
+                spellcheck="true"
+                tabindex="0"
+            ></div>
+        </div>
+
+        <div class="word-excel-editor-footer">
+
+            <small id="ewEditorStatus" aria-live="polite">Ready to edit</small>
+
+            <div class="word-excel-actions" style="margin-top:0">
+
+                <button type="button" class="btn btn-ghost" id="ewPreviewBtn">
+                    Preview document
+                </button>
+
+                <button type="button" class="btn btn-primary" id="ewDownloadBtn">
+                    Download DOCX
+                </button>
+
+            </div>
+
+        </div>
+
+    </section>
+
+</main>
+
+<!-- ORIGINAL SPREADSHEET VIEWER -->
+<div class="word-excel-viewer" id="ewViewer" role="dialog" aria-modal="true">
+    <div class="word-excel-viewer-box">
+
+        <div class="word-excel-viewer-header">
+            <h3 id="ewViewerTitle">Spreadsheet preview</h3>
+            <button type="button" id="ewCloseViewer" aria-label="Close preview">×</button>
+        </div>
+
+        <div class="word-excel-viewer-content" id="ewViewerContent"></div>
+
+    </div>
+</div>
+
+<!-- WORD PREVIEW -->
+<div class="word-excel-preview" id="ewPreview" role="dialog" aria-modal="true">
+
+    <div class="word-excel-preview-box">
+
+        <div class="word-excel-preview-heading">
+            <h2>Word document preview</h2>
+            <button type="button" id="ewClosePreview" aria-label="Close preview">×</button>
+        </div>
+
+        <div class="word-excel-preview-content" id="ewPreviewContent"></div>
+
+    </div>
+
+</div>
+
+<footer class="site-footer wrap">
+    <a class="brand" href="index.html">
+        <span class="brand-mark">J</span>
+        <span>JScan</span>
+    </a>
+
+    <span>© 2026 JScan</span>
+</footer>
+
+<!-- CONVERSION LIBRARIES -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html-docx-js/0.3.1/html-docx.js"></script>
+
+<script src="js/main.js"></script>
+<script src="js/excel-to-word.js"></script>
+
+</body>
+</html>

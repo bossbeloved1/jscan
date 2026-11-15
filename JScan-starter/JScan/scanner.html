@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Scanner — JScan</title>
+    <meta name="description" content="Scan QR codes and barcodes with JScan.">
+
+    <link rel="stylesheet" href="css/style.css">
+
+    <style>
+        .scanner-options {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 24px;
+            max-width: 950px;
+            margin: 40px auto;
+        }
+
+        .scanner-option {
+            display: block;
+            text-decoration: none;
+            color: inherit;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 35px 25px;
+            text-align: center;
+            transition: transform .2s ease, border-color .2s ease;
+        }
+
+        .scanner-option:hover {
+            transform: translateY(-5px);
+            border-color: var(--blue);
+        }
+
+        .scanner-option-icon {
+            width: 76px;
+            height: 76px;
+            display: grid;
+            place-items: center;
+            margin: 0 auto 20px;
+            border-radius: 20px;
+            background: rgba(37, 99, 235, .10);
+            color: var(--blue);
+            font-size: 38px;
+        }
+
+        .scanner-option h2 {
+            margin-bottom: 10px;
+        }
+
+        .scanner-option p {
+            color: var(--muted);
+            line-height: 1.7;
+            margin-bottom: 22px;
+        }
+
+        .scanner-option .btn {
+            display: inline-block;
+        }
+
+        @media (max-width: 600px) {
+            .scanner-options {
+                grid-template-columns: 1fr;
+                gap: 16px;
+                margin-top: 25px;
+            }
+
+            .scanner-option {
+                padding: 28px 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header class="site-header">
+
+    <a class="brand" href="index.html">
+        <span class="brand-mark">J</span>
+        <span>JScan</span>
+    </a>
+
+    <button class="menu-toggle"
+            type="button"
+            aria-label="Open navigation menu"
+            aria-controls="mainNavigation"
+            aria-expanded="false">
+        ☰
+    </button>
+
+    <nav class="main-nav" id="mainNavigation">
+        <a href="index.html">Home</a>
+        <a class="active" href="tools.html">Explore tools</a>
+        <a href="about.html">About</a>
+        <a href="contact.html">Contact</a>
+    </nav>
+
+    <div class="header-actions">
+        <button class="icon-btn"
+                type="button"
+                data-theme-toggle
+                aria-label="Toggle theme">☾</button>
+
+        <a class="btn btn-ghost" href="login.html">Log in</a>
+        <a class="btn btn-primary" href="register.html">Create account</a>
+    </div>
+
+</header>
+
+<main class="wrap page-main">
+
+    <div class="breadcrumb">
+        <a href="tools.html">All tools</a>
+        <span>/</span>
+        <span>Scanner</span>
+    </div>
+
+    <section class="page-intro">
+        <span class="eyebrow">JSCAN WORKSPACE</span>
+
+        <h1>What would you like to scan?</h1>
+
+        <p>
+            Scan QR codes and barcodes using your camera
+            or an uploaded image.
+        </p>
+    </section>
+
+    <section class="scanner-options">
+
+        <a href="qr-scanner.html" class="scanner-option">
+
+            <div class="scanner-option-icon">▦</div>
+
+            <h2>QR Code Scanner</h2>
+
+            <p>
+                Scan QR codes, read their contents and open
+                website links directly.
+            </p>
+
+            <span class="btn btn-primary">
+                Scan QR Code →
+            </span>
+
+        </a>
+
+        <a href="barcode-scanner.html" class="scanner-option">
+
+            <div class="scanner-option-icon">▥</div>
+
+            <h2>Barcode Scanner</h2>
+
+            <p>
+                Scan product barcodes and decode their
+                information using your camera or an image.
+            </p>
+
+            <span class="btn btn-primary">
+                Scan Barcode →
+            </span>
+
+        </a>
+
+    </section>
+
+</main>
+
+<footer class="site-footer wrap">
+    <a class="brand" href="index.html">
+        <span class="brand-mark">J</span>
+        <span>JScan</span>
+    </a>
+
+    <span>© 2026 JScan</span>
+</footer>
+
+<script src="js/main.js"></script>
+
+</body>
+</html>

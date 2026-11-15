@@ -1,0 +1,582 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Settings — JScan</title>
+
+    <meta name="description" content="Manage your JScan profile, account, password and appearance.">
+
+    <link rel="stylesheet" href="css/style.css">
+
+    <style>
+        .settings-page {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .settings-intro {
+            margin-bottom: 28px;
+        }
+
+        .settings-intro h1 {
+            margin: 8px 0;
+        }
+
+        .settings-intro p {
+            color: var(--text-muted);
+        }
+
+        .settings-section {
+            padding: 25px;
+            margin-bottom: 22px;
+        }
+
+        .settings-section-header {
+            margin-bottom: 22px;
+        }
+
+        .settings-section-header h2 {
+            margin: 0 0 7px;
+            font-size: 19px;
+        }
+
+        .settings-section-header p {
+            margin: 0;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .profile-upload-area {
+            display: flex;
+            align-items: center;
+            gap: 22px;
+            flex-wrap: wrap;
+            margin-bottom: 25px;
+        }
+
+        .settings-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid var(--blue);
+            background: var(--bg-soft, #eef3ff);
+        }
+
+        .avatar-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 9px;
+        }
+
+        .avatar-controls p {
+            margin: 0;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        .avatar-buttons {
+            display: flex;
+            gap: 9px;
+            flex-wrap: wrap;
+        }
+
+        .settings-field {
+            margin-bottom: 19px;
+        }
+
+        .settings-field label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .settings-field input {
+            width: 100%;
+            padding: 13px 14px;
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            background: var(--surface);
+            color: var(--text);
+            outline: none;
+            font: inherit;
+        }
+
+        .settings-field input:focus {
+            border-color: var(--blue);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, .10);
+        }
+
+        .settings-field input:disabled {
+            opacity: .7;
+            cursor: not-allowed;
+        }
+
+        .settings-field small {
+            display: block;
+            margin-top: 7px;
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+
+        .settings-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .settings-actions button {
+            cursor: pointer;
+        }
+
+        .settings-message {
+            display: none;
+            margin-top: 15px;
+            padding: 12px 14px;
+            border-radius: 9px;
+            font-size: 13px;
+        }
+
+        .settings-message.success {
+            display: block;
+            color: #15803d;
+            background: rgba(22, 163, 74, .10);
+        }
+
+        .settings-message.error {
+            display: block;
+            color: #dc2626;
+            background: rgba(220, 38, 38, .10);
+        }
+
+        .appearance-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .appearance-info h3 {
+            margin: 0 0 5px;
+            font-size: 15px;
+        }
+
+        .appearance-info p {
+            margin: 0;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        .danger-section {
+            border: 1px solid rgba(220, 38, 38, .25);
+        }
+
+        .danger-section h2 {
+            color: #dc2626;
+        }
+
+        .danger-section p {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .danger-button {
+            background: #dc2626;
+            color: #ffffff;
+            border: none;
+        }
+
+        .danger-button:hover {
+            background: #b91c1c;
+        }
+
+        @media (max-width: 600px) {
+            .settings-section {
+                padding: 19px;
+            }
+
+            .profile-upload-area {
+                align-items: flex-start;
+            }
+
+            .settings-actions button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<!-- HEADER -->
+<header class="site-header">
+
+    <a class="brand" href="index.html">
+        <span class="brand-mark">J</span>
+        <span>JScan</span>
+    </a>
+
+    <button
+        class="menu-toggle"
+        type="button"
+        aria-label="Open navigation menu"
+        aria-expanded="false"
+        aria-controls="mainNavigation"
+    >
+        ☰
+    </button>
+
+    <nav class="main-nav" id="mainNavigation">
+        <a href="index.html">Home</a>
+        <a href="tools.html">Explore tools</a>
+        <a href="about.html">About</a>
+        <a href="contact.html">Contact</a>
+    </nav>
+
+    <div class="header-actions">
+
+        <button
+            class="icon-btn"
+            data-theme-toggle
+            type="button"
+            aria-label="Toggle theme"
+        >
+            ☾
+        </button>
+
+        <a href="dashboard.html" class="btn btn-ghost">
+            Dashboard
+        </a>
+
+    </div>
+
+</header>
+
+
+<!-- MAIN SETTINGS -->
+<main class="wrap page-main settings-page">
+
+    <div class="breadcrumb">
+        <a href="dashboard.html">Dashboard</a>
+        <span>/</span>
+        <span>Settings</span>
+    </div>
+
+
+    <div class="settings-intro">
+
+        <span class="eyebrow">YOUR ACCOUNT</span>
+
+        <h1>Settings</h1>
+
+        <p>
+            Manage your personal information, account security
+            and JScan appearance.
+        </p>
+
+    </div>
+
+
+    <!-- PROFILE SETTINGS -->
+    <section class="panel settings-section">
+
+        <div class="settings-section-header">
+            <h2>Profile Information</h2>
+            <p>Update your profile picture and display name.</p>
+        </div>
+
+        <!-- PROFILE PICTURE -->
+        <div class="profile-upload-area">
+
+            <img
+                src="https://placehold.co/160x160/eaf0ff/2563eb?text=J"
+                alt="Profile picture preview"
+                class="settings-avatar"
+                id="settingsAvatarPreview"
+            >
+
+            <div class="avatar-controls">
+
+                <strong>Profile Picture</strong>
+
+                <p>JPG, PNG or WebP. Maximum size: 2MB.</p>
+
+                <div class="avatar-buttons">
+
+                    <button
+                        type="button"
+                        class="btn btn-primary"
+                        id="chooseAvatarBtn"
+                    >
+                        Upload Picture
+                    </button>
+
+                    <button
+                        type="button"
+                        class="btn btn-ghost"
+                        id="removeAvatarBtn"
+                    >
+                        Remove Picture
+                    </button>
+
+                </div>
+
+                <input
+                    type="file"
+                    id="avatarInput"
+                    accept="image/jpeg,image/png,image/webp"
+                    hidden
+                >
+
+            </div>
+
+        </div>
+
+
+        <!-- DISPLAY NAME -->
+        <form id="profileForm">
+
+            <div class="settings-field">
+
+                <label for="displayName">
+                    Display Name
+                </label>
+
+                <input
+                    type="text"
+                    id="displayName"
+                    name="displayName"
+                    placeholder="Enter your display name"
+                    maxlength="60"
+                    required
+                >
+
+            </div>
+
+            <div class="settings-actions">
+
+                <button
+                    type="submit"
+                    class="btn btn-primary"
+                    id="saveProfileBtn"
+                >
+                    Save Profile Changes
+                </button>
+
+            </div>
+
+            <div
+                id="profileMessage"
+                class="settings-message"
+                role="status"
+                aria-live="polite"
+            ></div>
+
+        </form>
+
+    </section>
+
+
+    <!-- ACCOUNT INFORMATION -->
+    <section class="panel settings-section">
+
+        <div class="settings-section-header">
+            <h2>Account Information</h2>
+            <p>Your registered JScan email address.</p>
+        </div>
+
+        <div class="settings-field">
+
+            <label for="accountEmail">
+                Email Address
+            </label>
+
+            <input
+                type="email"
+                id="accountEmail"
+                disabled
+            >
+
+            <small>
+                This is the email address associated with your account.
+            </small>
+
+        </div>
+
+    </section>
+
+
+    <!-- PASSWORD SETTINGS -->
+    <section class="panel settings-section">
+
+        <div class="settings-section-header">
+            <h2>Change Password</h2>
+            <p>Choose a new password for your JScan account.</p>
+        </div>
+
+        <form id="passwordForm">
+
+            <div class="settings-field">
+
+                <label for="newPassword">
+                    New Password
+                </label>
+
+                <input
+                    type="password"
+                    id="newPassword"
+                    placeholder="Enter your new password"
+                    minlength="8"
+                    autocomplete="new-password"
+                    required
+                >
+
+            </div>
+
+            <div class="settings-field">
+
+                <label for="confirmPassword">
+                    Confirm New Password
+                </label>
+
+                <input
+                    type="password"
+                    id="confirmPassword"
+                    placeholder="Confirm your new password"
+                    minlength="8"
+                    autocomplete="new-password"
+                    required
+                >
+
+                <small>
+                    Your password must contain at least 8 characters.
+                </small>
+
+            </div>
+
+            <div class="settings-actions">
+
+                <button
+                    type="submit"
+                    class="btn btn-primary"
+                    id="changePasswordBtn"
+                >
+                    Update Password
+                </button>
+
+            </div>
+
+            <div
+                id="passwordMessage"
+                class="settings-message"
+                role="status"
+                aria-live="polite"
+            ></div>
+
+        </form>
+
+    </section>
+
+
+    <!-- APPEARANCE SETTINGS -->
+    <section class="panel settings-section">
+
+        <div class="settings-section-header">
+            <h2>Appearance</h2>
+            <p>Choose how JScan looks on your device.</p>
+        </div>
+
+        <div class="appearance-row">
+
+            <div class="appearance-info">
+
+                <h3>Light and Dark Mode</h3>
+
+                <p>
+                    Switch between light and dark appearance.
+                </p>
+
+            </div>
+
+            <button
+                type="button"
+                class="btn btn-primary"
+                data-theme-toggle
+                id="settingsThemeToggle"
+            >
+                Toggle Theme
+            </button>
+
+        </div>
+
+    </section>
+
+
+    <!-- SIGN OUT -->
+    <section class="panel settings-section danger-section">
+
+        <div class="settings-section-header">
+
+            <h2>Sign Out</h2>
+
+            <p>
+                Sign out of your JScan account on this device.
+            </p>
+
+        </div>
+
+        <button
+            type="button"
+            class="btn danger-button"
+            id="settingsLogoutBtn"
+        >
+            Log Out
+        </button>
+
+    </section>
+
+
+    <!-- GENERAL STATUS -->
+    <p
+        id="settingsGeneralMessage"
+        class="fine-print"
+        role="status"
+        aria-live="polite"
+    ></p>
+
+</main>
+
+
+<!-- FOOTER -->
+<footer class="site-footer wrap">
+
+    <a class="brand" href="index.html">
+        <span class="brand-mark">J</span>
+        <span>JScan</span>
+    </a>
+
+    <span>© 2026 JScan. Your digital workspace.</span>
+
+</footer>
+
+
+<!-- SUPABASE -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<!-- JSCAN CONFIGURATION -->
+<script src="js/supabase.js"></script>
+
+<!-- MAIN WEBSITE -->
+<script src="js/main.js"></script>
+
+<!-- SETTINGS FUNCTIONALITY -->
+<script src="js/settings.js"></script>
+
+</body>
+</html>

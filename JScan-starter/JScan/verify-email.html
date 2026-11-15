@@ -1,0 +1,201 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Verify Your Email — JScan</title>
+
+    <meta name="description" content="Verify your email address to activate your JScan account.">
+
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+<!-- HEADER -->
+<header class="site-header">
+
+    <a class="brand" href="index.html">
+        <span class="brand-mark">J</span>
+        <span>JScan</span>
+    </a>
+
+    <nav class="main-nav">
+        <a href="index.html">Home</a>
+        <a href="tools.html">Explore tools</a>
+        <a href="about.html">About</a>
+        <a href="contact.html">Contact</a>
+    </nav>
+
+    <div class="header-actions">
+        <button class="icon-btn" data-theme-toggle aria-label="Toggle theme">☾</button>
+    </div>
+
+</header>
+
+
+<!-- MAIN CONTENT -->
+<main class="wrap page-main">
+
+    <div class="breadcrumb">
+        <a href="index.html">Home</a>
+        <span>/</span>
+        <span>Verify Email</span>
+    </div>
+
+
+    <div class="page-intro">
+        <span class="eyebrow">JSCAN WORKSPACE</span>
+        <h1>Verify your email</h1>
+        <p>One more step to activate your JScan account.</p>
+    </div>
+
+
+    <section class="panel">
+
+        <div class="auth-placeholder">
+
+            <div style="text-align:center;margin-bottom:25px;">
+
+                <div style="font-size:48px;color:var(--blue);">
+                    ✉
+                </div>
+
+                <h2>Check your inbox</h2>
+
+                <p>
+                    We've sent a 6-digit verification code to:
+                </p>
+
+                <h3 id="verificationEmail" style="margin-top:12px;">
+                    Loading email...
+                </h3>
+
+                <p class="fine-print" style="margin-top:12px;">
+                    Enter the code below to verify your account.
+                </p>
+
+            </div>
+
+
+            <!-- OTP FORM -->
+            <form id="verifyForm">
+
+                <label class="field-label" for="otpCode">
+                    Verification code
+                </label>
+
+                <input
+                    type="text"
+                    id="otpCode"
+                    name="otpCode"
+                    placeholder="Enter 6-digit code"
+                    inputmode="numeric"
+                    autocomplete="one-time-code"
+                    maxlength="6"
+                    pattern="[0-9]{6}"
+                    required
+                    style="text-align:center;font-size:24px;letter-spacing:8px;font-weight:700;"
+                >
+
+                <!-- COUNTDOWN -->
+                <p
+                    id="otpCountdown"
+                    class="fine-print"
+                    style="text-align:center;margin:15px 0;"
+                >
+                    Code expires in 10:00
+                </p>
+
+
+                <!-- MESSAGE -->
+                <p
+                    id="verifyMessage"
+                    class="fine-print"
+                    role="status"
+                    aria-live="polite"
+                    style="text-align:center;margin-bottom:15px;"
+                ></p>
+
+
+                <!-- VERIFY BUTTON -->
+                <button
+                    type="submit"
+                    class="btn btn-primary btn-full"
+                    id="verifyBtn"
+                >
+                    Verify email address
+                </button>
+
+            </form>
+
+
+            <!-- RESEND CODE -->
+            <div style="text-align:center;margin-top:25px;">
+
+                <p class="fine-print">
+                    Didn't receive your code?
+                </p>
+
+                <button
+                    type="button"
+                    class="text-link"
+                    id="resendBtn"
+                    style="background:none;border:none;cursor:pointer;font:inherit;"
+                  
+                >
+                    Resend code
+                </button>
+
+                <p
+                    id="resendMessage"
+                    class="fine-print"
+                    role="status"
+                    aria-live="polite"
+                    style="margin-top:10px;"
+                ></p>
+
+            </div>
+
+
+            <p class="fine-print" style="text-align:center;margin-top:25px;">
+                Wrong email address?
+                <a href="register.html">Register again</a>
+            </p>
+
+        </div>
+
+    </section>
+
+</main>
+
+
+<!-- FOOTER -->
+<footer class="site-footer wrap">
+
+    <a class="brand" href="index.html">
+        <span class="brand-mark">J</span>
+        <span>JScan</span>
+    </a>
+
+    <span>© 2026 JScan. Your digital workspace.</span>
+
+</footer>
+
+
+<!-- SUPABASE -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<!-- JSCAN CONFIGURATION -->
+<script src="js/supabase.js"></script>
+
+<!-- MAIN WEBSITE -->
+<script src="js/main.js"></script>
+
+<!-- OTP VERIFICATION -->
+<script src="js/verify-email.js"></script>
+
+</body>
+</html>

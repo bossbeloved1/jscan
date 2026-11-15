@@ -1,0 +1,623 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Image to Text (OCR) — JScan</title>
+    <link rel="stylesheet" href="css/style.css">
+
+    <style>
+        .ocr-container {
+            width: 100%;
+            max-width: 900px;
+            margin: 30px auto;
+        }
+
+        .ocr-upload {
+            display: block;
+            width: 100%;
+            box-sizing: border-box;
+            padding: 40px 20px;
+            border: 2px dashed var(--border);
+            border-radius: 16px;
+            background: var(--surface);
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .ocr-upload:hover {
+            border-color: var(--blue);
+        }
+
+        .ocr-upload input {
+            display: none;
+        }
+
+        .ocr-info {
+            margin-top: 15px;
+            font-size: 14px;
+            color: var(--text);
+        }
+
+        .ocr-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(125px, 1fr));
+            gap: 14px;
+            margin-top: 20px;
+        }
+
+        .ocr-image-card {
+            position: relative;
+            min-width: 0;
+            padding: 8px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: var(--surface);
+        }
+
+        .ocr-image-preview-button {
+            display: block;
+            width: 100%;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            cursor: zoom-in;
+        }
+
+        .ocr-image-card img {
+            display: block;
+            width: 100%;
+            height: 115px;
+            object-fit: contain;
+            border-radius: 7px;
+        }
+
+        .ocr-image-name {
+            display: block;
+            margin-top: 8px;
+            font-size: 12px;
+            overflow-wrap: anywhere;
+        }
+
+        .ocr-remove-image {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            width: 26px;
+            height: 26px;
+            border: 0;
+            border-radius: 50%;
+            background: #d93025;
+            color: white;
+            cursor: pointer;
+            font-size: 17px;
+            line-height: 1;
+            z-index: 2;
+        }
+
+        .ocr-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .ocr-status {
+            margin-top: 15px;
+            color: var(--blue);
+            font-size: 14px;
+        }
+
+        .ocr-progress {
+            width: 100%;
+            height: 8px;
+            margin-top: 12px;
+            border-radius: 20px;
+            background: var(--border);
+            overflow: hidden;
+            display: none;
+        }
+
+        .ocr-progress-bar {
+            width: 0%;
+            height: 100%;
+            background: var(--blue);
+            transition: width .2s ease;
+        }
+
+        .ocr-preview-area {
+            margin-top: 35px;
+        }
+
+        .ocr-field {
+            margin-top: 18px;
+        }
+
+        .ocr-field label {
+            display: block;
+            margin-bottom: 7px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .ocr-field input,
+        .ocr-field select,
+        .ocr-editor-toolbar select {
+            width: 100%;
+            min-height: 40px;
+            box-sizing: border-box;
+            padding: 8px 10px;
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            background: var(--surface);
+            color: var(--text);
+            font: inherit;
+        }
+
+        .ocr-editor-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            padding: 12px;
+            margin-top: 18px;
+            border: 1px solid var(--border);
+            border-bottom: 0;
+            border-radius: 12px 12px 0 0;
+            background: var(--surface);
+        }
+
+        .ocr-editor-toolbar button {
+            min-width: 36px;
+            height: 38px;
+            padding: 0 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--surface);
+            color: var(--text);
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .ocr-editor-toolbar button:hover {
+            border-color: var(--blue);
+            color: var(--blue);
+        }
+
+        .ocr-editor-toolbar select {
+            width: auto;
+            max-width: 190px;
+        }
+
+        .ocr-font-upload {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 38px;
+            padding: 0 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--surface);
+            color: var(--text);
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .ocr-font-upload:hover {
+            border-color: var(--blue);
+            color: var(--blue);
+        }
+
+        .ocr-font-upload input {
+            display: none;
+        }
+
+        .ocr-page {
+            min-height: 650px;
+            max-width: 100%;
+            box-sizing: border-box;
+            padding: 55px 50px;
+            border: 1px solid var(--border);
+            background: #ffffff;
+            color: #222222;
+            border-radius: 0 0 12px 12px;
+            box-shadow: 0 3px 15px rgba(0,0,0,.06);
+        }
+
+        .ocr-page-heading {
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #e5e5e5;
+            color: #555555;
+            font-size: 13px;
+        }
+
+        .ocr-page-text {
+            min-height: 480px;
+            outline: none;
+            color: #222222;
+            background: #ffffff;
+            font-family: Arial, sans-serif;
+            font-size: 15px;
+            line-height: 1.8;
+            overflow-wrap: anywhere;
+            white-space: pre-wrap;
+        }
+
+        .ocr-page-text:focus {
+            outline: none;
+        }
+
+        .ocr-page-text:empty::before {
+            content: "Your extracted text will appear here. You can edit this document.";
+            color: #999999;
+        }
+
+        .ocr-navigation {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .ocr-downloads {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+        }
+
+        .ocr-downloads h2 {
+            margin-bottom: 8px;
+        }
+
+        /* Image lightbox */
+        .ocr-lightbox {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: rgba(0,0,0,.88);
+        }
+
+        .ocr-lightbox[hidden] {
+            display: none;
+        }
+
+        .ocr-lightbox-content {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 1000px;
+            max-height: 90vh;
+        }
+
+        .ocr-lightbox-image {
+            display: block;
+            max-width: 100%;
+            max-height: 75vh;
+            object-fit: contain;
+            border-radius: 8px;
+            background: white;
+        }
+
+        .ocr-lightbox-caption {
+            margin-top: 12px;
+            color: white;
+            text-align: center;
+            overflow-wrap: anywhere;
+        }
+
+        .ocr-lightbox-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .ocr-lightbox-controls button,
+        .ocr-lightbox-close {
+            min-width: 42px;
+            min-height: 40px;
+            padding: 8px 14px;
+            border: 1px solid rgba(255,255,255,.4);
+            border-radius: 8px;
+            background: rgba(255,255,255,.12);
+            color: white;
+            cursor: pointer;
+        }
+
+        .ocr-lightbox-controls button:disabled {
+            opacity: .4;
+            cursor: not-allowed;
+        }
+
+        .ocr-lightbox-close {
+            position: absolute;
+            top: -10px;
+            right: 0;
+            min-width: 42px;
+            font-size: 22px;
+        }
+
+        @media (max-width: 600px) {
+            .ocr-actions .btn {
+                width: 100%;
+                text-align: center;
+            }
+
+            .ocr-navigation {
+                flex-wrap: wrap;
+            }
+
+            .ocr-page {
+                min-height: 500px;
+                padding: 25px 18px;
+            }
+
+            .ocr-page-text {
+                min-height: 400px;
+            }
+
+            .ocr-editor-toolbar select {
+                max-width: 100%;
+            }
+
+            .ocr-lightbox {
+                padding: 12px;
+            }
+
+            .ocr-lightbox-close {
+                top: -45px;
+                right: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header class="site-header">
+    <a class="brand" href="index.html">
+        <span class="brand-mark">J</span>
+        <span>JScan</span>
+    </a>
+
+    <nav class="main-nav">
+        <a href="index.html">Home</a>
+        <a class="active" href="tools.html">Explore tools</a>
+        <a href="about.html">About</a>
+        <a href="contact.html">Contact</a>
+    </nav>
+
+    <div class="header-actions">
+        <button class="icon-btn" data-theme-toggle aria-label="Toggle theme">☾</button>
+        <a class="btn btn-ghost" href="login.html">Log in</a>
+        <a class="btn btn-primary" href="register.html">Create account</a>
+    </div>
+</header>
+
+<main class="wrap page-main">
+
+    <div class="breadcrumb">
+        <a href="tools.html">All tools</a>
+        <span>/</span>
+        <span>Image to Text (OCR)</span>
+    </div>
+
+    <div class="page-intro">
+        <span class="eyebrow">JSCAN WORKSPACE</span>
+        <h1>Image to Text (OCR)</h1>
+        <p>Extract text from multiple images, edit your document and download it as Word or PDF.</p>
+    </div>
+
+    <section class="panel">
+        <div class="ocr-container">
+
+            <label class="ocr-upload" for="ocrImageInput">
+                <div style="font-size:42px;color:var(--blue)">✦</div>
+                <h2>Upload images</h2>
+                <p>Select up to 100 images containing text.</p>
+                <span class="btn btn-primary">Choose Images</span>
+                <p class="fine-print">Supports JPG, PNG and WebP.</p>
+
+                <input
+                    type="file"
+                    id="ocrImageInput"
+                    accept="image/jpeg,image/png,image/webp"
+                    multiple
+                >
+            </label>
+
+            <div class="ocr-info" id="ocrFileInfo">
+                No images selected.
+            </div>
+
+            <div class="ocr-gallery" id="ocrImageGallery"></div>
+
+            <div class="ocr-actions">
+                <button class="btn btn-primary" id="extractTextBtn" disabled>
+                    Extract Text
+                </button>
+
+                <button class="btn btn-ghost" id="clearOcrBtn" type="button">
+                    Clear
+                </button>
+            </div>
+
+            <div class="ocr-status" id="ocrStatus" aria-live="polite"></div>
+
+            <div class="ocr-progress" id="ocrProgress">
+                <div class="ocr-progress-bar" id="ocrProgressBar"></div>
+            </div>
+
+            <div class="ocr-preview-area" id="ocrPreviewArea" hidden>
+
+                <h2>Document preview</h2>
+                <p class="fine-print" id="ocrPageCount"></p>
+                <p class="fine-print">
+                    Click inside the document to edit the extracted text.
+                    Your changes will be included in your downloads.
+                </p>
+
+                <div class="ocr-field">
+                    <label for="ocrFileName">Save document as</label>
+                    <input
+                        type="text"
+                        id="ocrFileName"
+                        value="JScan-Extracted-Text"
+                        placeholder="Enter your document name"
+                    >
+                </div>
+
+                <div class="ocr-editor-toolbar">
+                    <button type="button" data-editor-command="bold" title="Bold"><b>B</b></button>
+                    <button type="button" data-editor-command="italic" title="Italic"><i>I</i></button>
+                    <button type="button" data-editor-command="underline" title="Underline"><u>U</u></button>
+
+                    <select id="ocrFontFamily" aria-label="Font family">
+                        <option value="Arial">Arial</option>
+                        <option value="Calibri">Calibri</option>
+                        <option value="Times New Roman">Times New Roman</option>
+                        <option value="Georgia">Georgia</option>
+                        <option value="Verdana">Verdana</option>
+                        <option value="Tahoma">Tahoma</option>
+                        <option value="Trebuchet MS">Trebuchet MS</option>
+                        <option value="Courier New">Courier New</option>
+                        <option value="Garamond">Garamond</option>
+                        <option value="Palatino Linotype">Palatino Linotype</option>
+                        <option value="Comic Sans MS">Comic Sans MS</option>
+                        <option value="Impact">Impact</option>
+                    </select>
+
+                    <select id="ocrFontSize" aria-label="Font size">
+                        <option value="10">10 px</option>
+                        <option value="12">12 px</option>
+                        <option value="14">14 px</option>
+                        <option value="15" selected>15 px</option>
+                        <option value="16">16 px</option>
+                        <option value="18">18 px</option>
+                        <option value="20">20 px</option>
+                        <option value="22">22 px</option>
+                        <option value="24">24 px</option>
+                        <option value="28">28 px</option>
+                        <option value="32">32 px</option>
+                        <option value="36">36 px</option>
+                    </select>
+
+                    <label class="ocr-font-upload">
+                        Upload TTF font
+                        <input type="file" id="ocrCustomFontInput" accept=".ttf,font/ttf">
+                    </label>
+                </div>
+
+                <p class="fine-print" id="ocrFontStatus">
+                    Choose a font or upload a TTF font from your device.
+                </p>
+
+                <div class="ocr-page">
+                    <div class="ocr-page-heading">
+                        <strong id="ocrPageTitle">Page 1</strong>
+                    </div>
+
+                    <div
+                        class="ocr-page-text"
+                        id="ocrPageText"
+                        contenteditable="true"
+                        spellcheck="true"
+                        aria-label="Editable document page"
+                    ></div>
+                </div>
+
+                <div class="ocr-navigation">
+                    <button class="btn btn-ghost" id="previousPageBtn" disabled>
+                        Previous
+                    </button>
+
+                    <span id="ocrPageNumber">Page 0 of 0</span>
+
+                    <button class="btn btn-ghost" id="nextPageBtn" disabled>
+                        Next
+                    </button>
+                </div>
+
+                <div class="ocr-downloads">
+                    <h2>Download document</h2>
+                    <p class="fine-print">
+                        Download all your pages, including your edits.
+                    </p>
+
+                    <div class="ocr-actions">
+                        <button class="btn btn-primary" id="downloadDocxBtn" disabled>
+                            Download Word (.docx)
+                        </button>
+
+                        <button class="btn btn-ghost" id="downloadPdfBtn" disabled>
+                            Download PDF
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            <p class="fine-print" style="margin-top:20px;">
+                Text recognition is automated. Please review the extracted content for errors.
+            </p>
+
+        </div>
+    </section>
+
+</main>
+
+<!-- Image preview window -->
+<div class="ocr-lightbox" id="ocrLightbox" hidden>
+    <div class="ocr-lightbox-content">
+        <button
+            type="button"
+            class="ocr-lightbox-close"
+            id="ocrLightboxClose"
+            aria-label="Close image preview"
+        >×</button>
+
+        <img
+            src=""
+            alt="Full image preview"
+            class="ocr-lightbox-image"
+            id="ocrLightboxImage"
+        >
+
+        <div class="ocr-lightbox-caption" id="ocrLightboxCaption"></div>
+
+        <div class="ocr-lightbox-controls">
+            <button type="button" id="ocrLightboxPrevious">Previous</button>
+            <span id="ocrLightboxCounter" style="color:white;">1 of 1</span>
+            <button type="button" id="ocrLightboxNext">Next</button>
+        </div>
+    </div>
+</div>
+
+<footer class="site-footer wrap">
+    <a class="brand" href="index.html">
+        <span class="brand-mark">J</span>
+        <span>JScan</span>
+    </a>
+    <span>© 2026 JScan</span>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="js/main.js"></script>
+<script src="js/image-to-text.js"></script>
+
+</body>
+</html>

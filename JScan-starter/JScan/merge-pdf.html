@@ -1,0 +1,407 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Merge PDF — JScan</title>
+    <meta name="description" content="Combine multiple PDF files into one document using JScan.">
+
+    <link rel="stylesheet" href="css/style.css">
+
+    <style>
+        .merge-container {
+            width: 100%;
+            max-width: 100%;
+            margin: 35px 0;
+        }
+
+        .upload-area {
+            display: block;
+            width: 100%;
+            box-sizing: border-box;
+            border: 2px dashed var(--border);
+            border-radius: 16px;
+            padding: 40px 20px;
+            text-align: center;
+            background: var(--surface);
+            cursor: pointer;
+            transition: border-color .2s ease;
+        }
+
+        .upload-area:hover {
+            border-color: var(--blue);
+        }
+
+        .upload-icon {
+            font-size: 45px;
+            color: var(--blue);
+            margin-bottom: 12px;
+        }
+
+        .upload-area h2 {
+            margin-bottom: 8px;
+        }
+
+        .upload-area p {
+            color: var(--muted);
+            line-height: 1.7;
+        }
+
+        .upload-button {
+            display: inline-block;
+            margin-top: 15px;
+            cursor: pointer;
+        }
+
+        #pdfInput {
+            display: none;
+        }
+
+        .file-section {
+            margin-top: 30px;
+        }
+
+        .file-section-heading {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .file-list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 16px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: var(--surface);
+        }
+
+        .file-icon {
+            width: 45px;
+            height: 45px;
+            display: grid;
+            place-items: center;
+            flex-shrink: 0;
+            border-radius: 10px;
+            background: rgba(37, 99, 235, .10);
+            color: var(--blue);
+            font-size: 22px;
+        }
+
+        .file-details {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .file-details strong {
+            display: block;
+            overflow-wrap: anywhere;
+            margin-bottom: 5px;
+        }
+
+        .file-details span {
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .file-actions {
+            display: flex;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .file-action {
+            width: 34px;
+            height: 34px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: transparent;
+            color: inherit;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .file-action:hover {
+            border-color: var(--blue);
+            color: var(--blue);
+        }
+
+        .file-action:disabled {
+            opacity: .35;
+            cursor: not-allowed;
+        }
+
+        .remove-button {
+            color: #dc2626;
+        }
+
+        .merge-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 25px;
+        }
+
+        .merge-actions .btn {
+            cursor: pointer;
+        }
+
+        .merge-status {
+            margin-top: 20px;
+            padding: 14px 16px;
+            border-radius: 10px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--muted);
+            line-height: 1.6;
+            display: none;
+        }
+
+        .merge-status.show {
+            display: block;
+        }
+
+        .merge-status.error {
+            color: #dc2626;
+        }
+
+        .merge-status.success {
+            color: #16a34a;
+        }
+
+        .merge-note {
+            margin-top: 22px;
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        @media (max-width: 600px) {
+            .upload-area {
+                padding: 30px 15px;
+            }
+
+            .file-item {
+                gap: 9px;
+                padding: 12px;
+            }
+
+            .file-icon {
+                width: 38px;
+                height: 38px;
+            }
+
+            .file-action {
+                width: 30px;
+                height: 30px;
+            }
+
+            .merge-actions {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .merge-actions .btn {
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header class="site-header">
+
+    <a class="brand" href="index.html">
+        <span class="brand-mark">J</span>
+        <span>JScan</span>
+    </a>
+
+    <nav class="main-nav">
+        <a href="index.html">Home</a>
+        <a class="active" href="tools.html">Explore tools</a>
+        <a href="about.html">About</a>
+        <a href="contact.html">Contact</a>
+    </nav>
+
+    <div class="header-actions">
+
+        <button class="icon-btn"
+                data-theme-toggle
+                aria-label="Toggle theme">
+            ☾
+        </button>
+
+        <a class="btn btn-ghost" href="login.html">Log in</a>
+        <a class="btn btn-primary" href="register.html">Create account</a>
+
+    </div>
+
+</header>
+
+
+<main class="wrap page-main">
+
+    <div class="breadcrumb">
+        <a href="tools.html">All tools</a>
+        <span>/</span>
+        <span>Merge PDF</span>
+    </div>
+
+    <div class="page-intro">
+
+        <span class="eyebrow">JSCAN WORKSPACE</span>
+
+        <h1>Merge PDF</h1>
+
+        <p>
+            Combine multiple PDF files into one document.
+            Arrange your files in your preferred order before merging.
+        </p>
+
+    </div>
+
+
+    <section class="merge-container">
+
+        <div class="panel" style="padding:24px;">
+
+            <label class="upload-area" for="pdfInput">
+
+                <div class="upload-icon">📄</div>
+
+                <h2>Add PDF files</h2>
+
+                <p>
+                    Select multiple PDF documents from your device.
+                    You can add more files later.
+                </p>
+
+                <span class="btn btn-primary upload-button">
+                    Choose PDF files
+                </span>
+
+                <input
+                    type="file"
+                    id="pdfInput"
+                    accept=".pdf,application/pdf"
+                    multiple
+                >
+
+            </label>
+
+
+            <div class="file-section">
+
+                <div class="file-section-heading">
+
+                    <div>
+                        <h2>Selected files</h2>
+
+                        <p class="fine-print" id="fileCount">
+                            No files selected
+                        </p>
+                    </div>
+
+                    <button
+                        type="button"
+                        class="btn btn-ghost"
+                        id="clearFilesBtn"
+                        disabled
+                    >
+                        Clear all
+                    </button>
+
+                </div>
+
+
+                <div class="file-list" id="fileList">
+
+                    <div class="empty-state">
+                        <div style="font-size:35px;color:var(--blue)">▤</div>
+
+                        <h3>No PDF files added yet</h3>
+
+                        <p>
+                            Your selected PDF files will appear here.
+                        </p>
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="merge-actions">
+
+                <span class="fine-print">
+                    Arrange files using the arrow buttons.
+                </span>
+
+                <button
+                    type="button"
+                    class="btn btn-primary"
+                    id="mergeBtn"
+                    disabled
+                >
+                    Merge PDF files →
+                </button>
+
+            </div>
+
+
+            <div
+                class="merge-status"
+                id="mergeStatus"
+                role="status"
+                aria-live="polite"
+            ></div>
+
+
+            <p class="merge-note">
+                <strong>Privacy:</strong> PDF processing takes place in
+                your browser. Your selected documents are not uploaded
+                to a JScan server. Password-protected or damaged PDFs
+                may not be supported.
+            </p>
+
+        </div>
+
+    </section>
+
+</main>
+
+
+<footer class="site-footer wrap">
+
+    <a class="brand" href="index.html">
+        <span class="brand-mark">J</span>
+        <span>JScan</span>
+    </a>
+
+    <span>© 2026 JScan</span>
+
+</footer>
+
+
+<!-- PDF LIBRARY -->
+<script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+
+<!-- JSCAN SCRIPTS -->
+<script src="js/main.js"></script>
+<script src="js/merge-pdf.js"></script>
+
+</body>
+</html>

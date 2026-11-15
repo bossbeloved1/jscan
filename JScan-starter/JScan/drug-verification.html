@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Drug Verification — JScan</title>
+
+    <meta name="description" content="Check official medicine registration information using JScan.">
+
+    <link rel="stylesheet" href="css/style.css">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        /* Search dropdown */
+        .drug-search-select {
+            width: 100%;
+            padding: 15px 18px;
+            border: 1px solid #dbe2ea;
+            border-radius: 14px;
+            background: var(--surface, #ffffff);
+            color: var(--text, #1e293b);
+            font-family: inherit;
+            font-size: 15px;
+            outline: none;
+            cursor: pointer;
+            box-sizing: border-box;
+            transition: all 0.25s ease;
+        }
+
+        /* Search input */
+        #drugName {
+            width: 100%;
+            padding: 15px 18px;
+            border: 1px solid #dbe2ea;
+            border-radius: 14px;
+            background: var(--surface, #ffffff);
+            color: var(--text, #1e293b);
+            font-family: inherit;
+            font-size: 15px;
+            outline: none;
+            box-sizing: border-box;
+            transition: all 0.25s ease;
+        }
+
+        /* Focus effects */
+        .drug-search-select:focus,
+        #drugName:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.10);
+        }
+
+        #drugName::placeholder {
+            color: #94a3b8;
+        }
+
+        /* Input area visibility */
+        .drug-input-area {
+            margin-top: 20px;
+            display: none;
+        }
+
+        .drug-input-area.visible {
+            display: block;
+            animation: drugFadeIn 0.25s ease;
+        }
+
+        .drug-search-hint {
+            display: block;
+            margin-top: 9px;
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        @keyframes drugFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 600px) {
+            .drug-search-select,
+            #drugName {
+                font-size: 14px;
+            }
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <!-- HEADER -->
+    <header class="site-header">
+
+        <a class="brand" href="index.html">
+            <span class="brand-mark">J</span>
+            <span>JScan</span>
+        </a>
+
+        <nav class="main-nav">
+            <a href="index.html">Home</a>
+            <a href="tools.html">Explore tools</a>
+            <a href="scanner.html" class="active">Scanner</a>
+            <a href="about.html">About</a>
+            <a href="contact.html">Contact</a>
+        </nav>
+
+        <div class="header-actions">
+
+            <button class="icon-btn" data-theme-toggle aria-label="Toggle theme">
+                ☾
+            </button>
+
+            <a href="login.html" class="btn btn-ghost">Log in</a>
+
+            <a href="register.html" class="btn btn-primary">
+                Create account
+            </a>
+
+            <button class="menu-toggle" aria-label="Open menu">
+                ☰
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <!-- HERO -->
+    <section class="hero wrap">
+
+        <div class="hero-copy">
+
+            <span class="eyebrow">
+                <span class="eyebrow-dot"></span>
+                PRODUCT SAFETY
+            </span>
+
+            <h1>
+                Drug Safety & <span class="text-blue">Verification.</span>
+            </h1>
+
+            <p class="hero-sub">
+                Check official medicine registration information and
+                access trusted safety resources to help you make
+                informed decisions about medicines.
+            </p>
+
+        </div>
+
+    </section>
+
+
+    <!-- MEDICINE SEARCH -->
+    <section class="wrap section">
+
+        <div class="section-heading">
+
+            <div>
+                <span class="eyebrow">MEDICINE LOOKUP</span>
+
+                <h2>Check medicine information</h2>
+
+                <p>
+                    Search for official medicine registration information
+                    using the medicine name or NAFDAC registration number.
+                </p>
+            </div>
+
+        </div>
+
+
+        <div class="card">
+
+            <form id="drugSearchForm">
+
+                <div class="field">
+
+                    <label for="searchType">
+                        Choose search method
+                    </label>
+
+                    <select
+                        id="searchType"
+                        class="drug-search-select"
+                        required
+                    >
+
+                        <option value="" selected disabled>
+                            Select a search method
+                        </option>
+
+                        <option value="name">
+                            Medicine Name
+                        </option>
+
+                        <option value="registration">
+                            NAFDAC Registration Number
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <!-- INPUT AND BUTTON -->
+                <div class="drug-input-area" id="drugInputArea">
+
+                    <div class="field">
+
+                        <label for="drugName" id="drugInputLabel">
+                            Enter medicine name
+                        </label>
+
+                        <input
+                            type="text"
+                            id="drugName"
+                            name="drugName"
+                            placeholder="Type medicine name"
+                            autocomplete="off"
+                            required
+                        >
+
+                        <span class="drug-search-hint" id="drugSearchHint">
+                            Enter the name as printed on the medicine package.
+                        </span>
+
+                    </div>
+
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                        id="drugSearchBtn"
+                    >
+                        Search Official Records →
+                    </button>
+
+                </div>
+
+
+                <p
+                    class="notice"
+                    id="drugSearchMessage"
+                    role="status"
+                    aria-live="polite"
+                ></p>
+
+            </form>
+
+        </div>
+
+    </section>
+
+
+    <!-- OFFICIAL RESOURCES -->
+    <section class="wrap section">
+
+        <div class="section-heading">
+
+            <div>
+                <span class="eyebrow">TRUSTED SOURCES</span>
+
+                <h2>Official medicine safety resources</h2>
+
+                <p>
+                    Access information from recognised health and
+                    medicine regulatory organisations.
+                </p>
+            </div>
+
+        </div>
+
+
+        <div class="tool-grid">
+
+
+            <!-- NAFDAC -->
+            <article class="tool-card">
+
+                <div class="tool-icon tint-blue">
+                    <span>✓</span>
+                </div>
+
+                <h3>NAFDAC Greenbook</h3>
+
+                <p>
+                    Search Nigeria's official database of registered
+                    pharmaceutical products.
+                </p>
+
+                <a
+                    href="https://greenbook.nafdac.gov.ng/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="card-link"
+                >
+                    Visit NAFDAC Greenbook →
+                </a>
+
+            </article>
+
+
+            <!-- WHO -->
+            <article class="tool-card">
+
+                <div class="tool-icon tint-green">
+                    <span>+</span>
+                </div>
+
+                <h3>WHO Medicine Safety</h3>
+
+                <p>
+                    Learn about substandard and falsified medical
+                    products through the World Health Organization.
+                </p>
+
+                <a
+                    href="https://www.who.int/health-topics/substandard-and-falsified-medical-products"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="card-link"
+                >
+                    Visit WHO →
+                </a>
+
+            </article>
+
+
+            <!-- WHO UPDATES -->
+            <article class="tool-card">
+
+                <div class="tool-icon tint-orange">
+                    <span>!</span>
+                </div>
+
+                <h3>WHO Safety Updates</h3>
+
+                <p>
+                    Access WHO information and announcements about
+                    medicine quality and safety.
+                </p>
+
+                <a
+                    href="https://www.who.int/news"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="card-link"
+                >
+                    View WHO Updates →
+                </a>
+
+            </article>
+
+        </div>
+
+    </section>
+
+
+    <!-- SAFETY INFORMATION -->
+    <section class="wrap section">
+
+        <div class="card">
+
+            <span class="eyebrow">IMPORTANT INFORMATION</span>
+
+            <h2>What you should know</h2>
+
+            <p>
+                JScan helps users access official medicine information.
+                However, a database search or barcode scan alone cannot
+                confirm that an individual medicine pack is genuine.
+            </p>
+
+            <ul>
+
+                <li>
+                    A NAFDAC registration record indicates that a
+                    product has an official registration record.
+                </li>
+
+                <li>
+                    A registration number printed on a package does
+                    not independently prove that the particular pack
+                    is authentic.
+                </li>
+
+                <li>
+                    Do not rely on a barcode or product photograph
+                    alone to determine whether a medicine is genuine.
+                </li>
+
+                <li>
+                    If you suspect a medicine is counterfeit or unsafe,
+                    do not use it. Seek guidance from a pharmacist or
+                    contact NAFDAC.
+                </li>
+
+            </ul>
+
+        </div>
+
+    </section>
+
+
+    <!-- FOOTER -->
+    <footer class="site-footer wrap">
+
+        <div class="brand">
+            <span class="brand-mark">J</span>
+            <span>JScan</span>
+        </div>
+
+        <p>
+            © 2026 JScan. All rights reserved.
+        </p>
+
+        <div>
+            <a href="about.html">About</a>
+            <a href="contact.html">Contact</a>
+        </div>
+
+    </footer>
+
+
+    <!-- DROPDOWN FUNCTIONALITY -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+
+            const searchType = document.getElementById("searchType");
+            const inputArea = document.getElementById("drugInputArea");
+            const drugInput = document.getElementById("drugName");
+            const inputLabel = document.getElementById("drugInputLabel");
+            const searchHint = document.getElementById("drugSearchHint");
+            const searchMessage = document.getElementById("drugSearchMessage");
+
+            searchType.addEventListener("change", () => {
+
+                inputArea.classList.add("visible");
+
+                drugInput.value = "";
+                searchMessage.textContent = "";
+
+                if (searchType.value === "name") {
+
+                    inputLabel.textContent = "Medicine Name";
+
+                    drugInput.placeholder = "Enter medicine name";
+
+                    searchHint.textContent =
+                        "Enter the name as printed on the medicine package.";
+
+                } else if (searchType.value === "registration") {
+
+                    inputLabel.textContent = "NAFDAC Registration Number";
+
+                    drugInput.placeholder = "Enter NAFDAC registration number";
+
+                    searchHint.textContent =
+                        "Enter the registration number printed on the medicine package.";
+
+                }
+
+                drugInput.focus();
+
+            });
+
+        });
+    </script>
+
+
+    <script src="js/drug-verification.js"></script>
+    <script src="js/main.js"></script>
+
+</body>
+</html>

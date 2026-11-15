@@ -1,0 +1,255 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Explore tools — JScan</title>
+
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+<header class="site-header">
+
+    <a class="brand" href="index.html">
+        <span class="brand-mark">J</span>
+        <span>JScan</span>
+    </a>
+
+    <button class="menu-toggle"
+            aria-label="Open navigation menu"
+            aria-controls="mainNavigation"
+            aria-expanded="false">
+        ☰
+    </button>
+
+    <nav class="main-nav" id="mainNavigation">
+        <a href="index.html">Home</a>
+        <a class="active" href="tools.html">Explore tools</a>
+        <a href="about.html">About</a>
+        <a href="contact.html">Contact</a>
+    </nav>
+
+    <div class="header-actions">
+        <button class="icon-btn" data-theme-toggle aria-label="Toggle theme">☾</button>
+        <a class="btn btn-ghost" href="login.html">Log in</a>
+        <a class="btn btn-primary" href="register.html">Create account</a>
+    </div>
+
+</header>
+
+<main class="wrap page-main">
+
+    <div class="page-intro">
+        <span class="eyebrow">JSCAN TOOLBOX</span>
+
+        <h1>Explore all tools</h1>
+
+        <p>
+            Find the right tool for the task.
+            Each tool has its own dedicated workspace.
+        </p>
+    </div>
+
+    <div class="tool-search">
+        <input
+            id="toolSearch"
+            type="search"
+            placeholder="Search tools..."
+            aria-label="Search tools"
+        >
+        <span>⌕</span>
+    </div>
+
+    <div class="tool-grid" id="allTools">
+
+        <!-- QR CODE GENERATOR -->
+        <a class="tool-card"
+           href="qr-generator.html"
+           data-name="qr code generator">
+
+            <span class="tool-icon tint-blue">▦</span>
+            <h3>QR Code Generator</h3>
+            <p>Generate custom QR codes with colour controls.</p>
+            <span class="card-link">Open tool →</span>
+
+        </a>
+
+        <!-- BARCODE GENERATOR -->
+        <a class="tool-card"
+           href="barcode-generator.html"
+           data-name="barcode generator">
+
+            <span class="tool-icon tint-purple">▥</span>
+            <h3>Barcode Generator</h3>
+            <p>Create downloadable barcodes.</p>
+            <span class="card-link">Open tool →</span>
+
+        </a>
+
+        <!-- QR & BARCODE SCANNER -->
+        <a class="tool-card"
+           href="scanner.html"
+           data-name="qr barcode scanner">
+
+            <span class="tool-icon tint-green">⌗</span>
+            <h3>QR & Barcode Scanner</h3>
+            <p>Scan QR codes and barcodes using your camera or uploaded images.</p>
+            <span class="card-link">Open scanner →</span>
+
+        </a>
+
+        <!-- WORD TO PDF -->
+        <a class="tool-card"
+           href="word-to-pdf.html"
+           data-name="word to pdf">
+
+            <span class="tool-icon tint-cyan">▣</span>
+            <h3>Word to PDF</h3>
+            <p>Convert DOCX files to PDF.</p>
+            <span class="card-link">Open tool →</span>
+
+        </a>
+
+        <!-- PDF TO WORD -->
+        <a class="tool-card"
+           href="pdf-to-word.html"
+           data-name="pdf to word">
+
+            <span class="tool-icon tint-blue">▤</span>
+            <h3>PDF to Word</h3>
+            <p>Extract PDF content into editable documents.</p>
+            <span class="card-link">Open tool →</span>
+
+        </a>
+
+        <!-- WORD TO EXCEL -->
+        <a class="tool-card"
+           href="word-to-excel.html"
+           data-name="word to excel">
+
+            <span class="tool-icon tint-green">▦</span>
+            <h3>Word to Excel</h3>
+            <p>Move structured document data into spreadsheets.</p>
+            <span class="card-link">Open tool →</span>
+
+        </a>
+
+        <!-- EXCEL TO WORD -->
+        <a class="tool-card"
+           href="excel-to-word.html"
+           data-name="excel to word">
+
+            <span class="tool-icon tint-purple">▤</span>
+            <h3>Excel to Word</h3>
+            <p>Turn spreadsheet content into a document.</p>
+            <span class="card-link">Open tool →</span>
+
+        </a>
+
+        <!-- MERGE PDF -->
+        <a class="tool-card"
+           href="merge-pdf.html"
+           data-name="merge pdf">
+
+            <span class="tool-icon tint-orange">⊞</span>
+            <h3>Merge PDF</h3>
+            <p>Combine several PDFs into one file.</p>
+            <span class="card-link">Open tool →</span>
+
+        </a>
+
+        <!-- PDF COMPRESSOR -->
+        <a class="tool-card"
+           href="pdf-compressor.html"
+           data-name="pdf compressor compress pdf">
+
+            <span class="tool-icon tint-blue">▧</span>
+            <h3>PDF Compressor</h3>
+            <p>Reduce PDF file sizes with your preferred compression quality.</p>
+            <span class="card-link">Open tool →</span>
+
+        </a>
+
+        <!-- SPLIT PDF -->
+        <a class="tool-card"
+           href="split-pdf.html"
+           data-name="split pdf">
+
+            <span class="tool-icon tint-pink">⇱</span>
+            <h3>Split PDF</h3>
+            <p>Separate a PDF into smaller files.</p>
+            <span class="card-link">Open tool →</span>
+
+        </a>
+
+        <!-- IMAGE TO TEXT -->
+        <a class="tool-card"
+           href="image-to-text.html"
+           data-name="image to text ocr">
+
+            <span class="tool-icon tint-cyan">▧</span>
+            <h3>Image to Text (OCR)</h3>
+            <p>Extract text from scanned pages and images.</p>
+            <span class="card-link">Open tool →</span>
+
+        </a>
+
+        <!-- PRESENTATION MAKER -->
+        <a class="tool-card"
+           href="presentation-maker.html"
+           data-name="presentation maker">
+
+            <span class="tool-icon tint-blue">▱</span>
+            <h3>Presentation Maker</h3>
+            <p>Plan and create presentation content.</p>
+            <span class="card-link">Open tool →</span>
+
+        </a>
+
+        <!-- PROJECT ASSISTANT -->
+        <a class="tool-card"
+           href="project-writer.html"
+           data-name="project writer">
+
+            <span class="tool-icon tint-purple">✎</span>
+            <h3>Project Assistant</h3>
+            <p>Organize and develop academic project drafts.</p>
+            <span class="card-link">Open tool →</span>
+
+        </a>
+
+    </div>
+
+</main>
+
+<footer class="site-footer wrap">
+
+    <a class="brand" href="index.html">
+        <span class="brand-mark">J</span>
+        <span>JScan</span>
+    </a>
+
+    <span>© 2026 JScan</span>
+
+</footer>
+
+<script src="js/main.js"></script>
+
+<script>
+document.getElementById('toolSearch').addEventListener('input', e => {
+
+    const query = e.target.value.toLowerCase().trim();
+
+    document.querySelectorAll('#allTools .tool-card').forEach(card => {
+        card.hidden = !card.dataset.name.includes(query);
+    });
+
+});
+</script>
+
+</body>
+</html>

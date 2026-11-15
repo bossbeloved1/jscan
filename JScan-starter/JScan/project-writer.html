@@ -1,0 +1,441 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Project Writer — JScan</title>
+  <link rel="stylesheet" href="css/style.css">
+
+  <style>
+    .pw-page { padding-bottom: 48px; }
+    .pw-intro { margin: 26px 0 22px; }
+    .pw-panel {
+      background: var(--card-bg, var(--surface, #fff));
+      border: 1px solid var(--border-color, #e5e7eb);
+      border-radius: 16px;
+      padding: 22px;
+    }
+    .pw-screen[hidden] { display: none !important; }
+    .pw-heading { margin: 0 0 8px; }
+    .pw-description {
+      color: var(--muted-text, #6b7280);
+      margin: 0 0 22px;
+      line-height: 1.6;
+    }
+    .pw-category-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 15px;
+    }
+    .pw-category {
+      display: flex;
+      gap: 15px;
+      align-items: flex-start;
+      text-align: left;
+      width: 100%;
+      min-height: 145px;
+      padding: 20px;
+      border: 1px solid var(--border-color, #e5e7eb);
+      border-radius: 13px;
+      background: transparent;
+      color: inherit;
+      cursor: pointer;
+      font: inherit;
+      transition: border-color .2s, background .2s, transform .2s;
+    }
+    .pw-category:hover {
+      border-color: var(--blue, #2563eb);
+      background: rgba(37,99,235,.04);
+      transform: translateY(-2px);
+    }
+    .pw-category-icon {
+      display: grid;
+      place-items: center;
+      flex: 0 0 48px;
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: rgba(37,99,235,.10);
+      color: var(--blue, #2563eb);
+      font-size: 23px;
+    }
+    .pw-category h3 { margin: 2px 0 7px; font-size: 17px; }
+    .pw-category p {
+      margin: 0;
+      color: var(--muted-text, #6b7280);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+    .pw-back {
+      border: 0;
+      background: transparent;
+      color: var(--blue, #2563eb);
+      padding: 0;
+      margin-bottom: 18px;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 600;
+    }
+    .pw-methods {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 15px;
+    }
+    .pw-method {
+      padding: 22px;
+      border: 1px solid var(--border-color, #e5e7eb);
+      border-radius: 13px;
+      background: transparent;
+      color: inherit;
+      text-align: left;
+      cursor: pointer;
+      font: inherit;
+      min-height: 170px;
+    }
+    .pw-method:hover {
+      border-color: var(--blue, #2563eb);
+      background: rgba(37,99,235,.04);
+    }
+    .pw-method-icon { font-size: 27px; margin-bottom: 13px; }
+    .pw-method h3 { margin: 0 0 8px; }
+    .pw-method p {
+      margin: 0;
+      color: var(--muted-text, #6b7280);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .pw-form { display: grid; gap: 15px; max-width: 760px; }
+    .pw-field { display: grid; gap: 7px; }
+    .pw-field label { font-weight: 600; font-size: 14px; }
+    .pw-field input, .pw-field select, .pw-field textarea,
+    .pw-title-input, .pw-search {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 12px;
+      border: 1px solid var(--border-color, #d1d5db);
+      border-radius: 9px;
+      background: var(--card-bg, var(--surface, transparent));
+      color: inherit;
+      font: inherit;
+    }
+    .pw-field textarea { min-height: 105px; resize: vertical; }
+    .pw-field input:focus, .pw-field select:focus,
+    .pw-field textarea:focus, .pw-title-input:focus {
+      outline: 2px solid rgba(37,99,235,.18);
+      border-color: var(--blue, #2563eb);
+    }
+    .pw-btn {
+      border: 1px solid var(--border-color, #d1d5db);
+      border-radius: 9px;
+      padding: 10px 14px;
+      background: transparent;
+      color: inherit;
+      cursor: pointer;
+      font: inherit;
+    }
+    .pw-btn.primary {
+      background: var(--blue, #2563eb);
+      color: #fff;
+      border-color: var(--blue, #2563eb);
+    }
+    .pw-btn:disabled { opacity: .45; cursor: not-allowed; }
+    .pw-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .pw-editor-top {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .pw-title-input {
+      font-size: 20px;
+      font-weight: 650;
+      margin-bottom: 12px;
+    }
+    .pw-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 9px;
+      border: 1px solid var(--border-color, #d1d5db);
+      border-bottom: 0;
+      border-radius: 10px 10px 0 0;
+      background: rgba(127,127,127,.06);
+    }
+    .pw-tool {
+      min-width: 35px;
+      padding: 6px 9px;
+      border: 1px solid var(--border-color, #d1d5db);
+      border-radius: 7px;
+      background: transparent;
+      color: inherit;
+      cursor: pointer;
+    }
+    .pw-editor {
+      min-height: 560px;
+      padding: 28px;
+      border: 1px solid var(--border-color, #d1d5db);
+      border-radius: 0 0 10px 10px;
+      outline: none;
+      line-height: 1.7;
+      overflow-wrap: anywhere;
+      background: var(--editor-bg, transparent);
+    }
+    .pw-editor:focus { border-color: var(--blue, #2563eb); }
+    .pw-editor:empty:before {
+      content: "Start writing your document here...";
+      color: var(--muted-text, #9ca3af);
+    }
+    .pw-meta {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+      color: var(--muted-text, #6b7280);
+      font-size: 13px;
+    }
+    .pw-notice {
+      padding: 12px 14px;
+      border-radius: 9px;
+      background: rgba(37,99,235,.07);
+      color: var(--muted-text, #6b7280);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .pw-library { display: grid; gap: 8px; margin-top: 14px; }
+    .pw-document {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border: 1px solid var(--border-color, #e5e7eb);
+      border-radius: 9px;
+    }
+    .pw-document button {
+      border: 0;
+      background: transparent;
+      color: var(--blue, #2563eb);
+      cursor: pointer;
+      font: inherit;
+    }
+    .pw-document small {
+      display: block;
+      color: var(--muted-text, #6b7280);
+      margin-top: 4px;
+    }
+    .pw-empty {
+      text-align: center;
+      padding: 30px 15px;
+      color: var(--muted-text, #6b7280);
+    }
+    @media(max-width:650px) {
+      .pw-category-grid, .pw-methods { grid-template-columns: 1fr; }
+      .pw-category { min-height: auto; }
+      .pw-panel { padding: 16px; }
+      .pw-editor { min-height: 420px; padding: 16px; }
+    }
+  </style>
+</head>
+
+<body>
+
+<header class="site-header">
+  <a class="brand" href="index.html">
+    <span class="brand-mark">J</span>
+    <span>JScan</span>
+  </a>
+
+  <nav class="main-nav">
+    <a href="index.html">Home</a>
+    <a class="active" href="tools.html">Explore tools</a>
+    <a href="about.html">About</a>
+    <a href="contact.html">Contact</a>
+  </nav>
+
+  <div class="header-actions">
+    <button class="icon-btn" data-theme-toggle aria-label="Toggle theme">☾</button>
+    <a class="btn btn-ghost" href="login.html">Log in</a>
+    <a class="btn btn-primary" href="register.html">Create account</a>
+    <button class="menu-toggle" aria-label="Open menu">☰</button>
+  </div>
+</header>
+
+<main class="wrap page-main pw-page">
+
+  <div class="breadcrumb">
+    <a href="tools.html">All tools</a>
+    <span>/</span>
+    <span>Project Writer</span>
+  </div>
+
+  <section class="page-intro pw-intro">
+    <span class="eyebrow">JSCAN WRITING STUDIO</span>
+    <h1>Project Writer</h1>
+    <p>Write school projects, business plans, movie scripts and other documents. Choose how you want to work.</p>
+  </section>
+
+  <!-- SCREEN 1: CATEGORY SELECTION -->
+  <section class="pw-panel pw-screen" id="pwCategoryScreen">
+    <h2 class="pw-heading">What would you like to write?</h2>
+    <p class="pw-description">Choose a writing category to get started.</p>
+
+    <div class="pw-category-grid">
+      <button class="pw-category" type="button" data-category="academic">
+        <span class="pw-category-icon">🎓</span>
+        <span>
+          <h3>Academic Projects</h3>
+          <p>School projects, research work, assignments, seminar papers, dissertations and thesis writing.</p>
+        </span>
+      </button>
+
+      <button class="pw-category" type="button" data-category="business">
+        <span class="pw-category-icon">📊</span>
+        <span>
+          <h3>Business Writing</h3>
+          <p>Business plans, proposals, feasibility studies, business reports and company documents.</p>
+        </span>
+      </button>
+
+      <button class="pw-category" type="button" data-category="script">
+        <span class="pw-category-icon">🎬</span>
+        <span>
+          <h3>Script Writing</h3>
+          <p>Movie scripts, short films, stage plays, YouTube scripts and storytelling.</p>
+        </span>
+      </button>
+
+      <button class="pw-category" type="button" data-category="other">
+        <span class="pw-category-icon">📝</span>
+        <span>
+          <h3>Other Documents</h3>
+          <p>Reports, letters, articles, speeches and other custom writing.</p>
+        </span>
+      </button>
+    </div>
+  </section>
+
+  <!-- SCREEN 2: CHOOSE WRITING METHOD -->
+  <section class="pw-panel pw-screen" id="pwMethodScreen" hidden>
+    <button class="pw-back" id="pwBackCategories" type="button">← All categories</button>
+    <h2 class="pw-heading" id="pwSelectedCategory">Academic Projects</h2>
+    <p class="pw-description">How would you like to create your document?</p>
+
+    <div class="pw-methods">
+      <button class="pw-method" id="pwChooseAI" type="button">
+        <div class="pw-method-icon">✨</div>
+        <h3>Write with AI</h3>
+        <p>Answer a few questions and let AI help you develop and organize your writing.</p>
+      </button>
+
+      <button class="pw-method" id="pwChooseManual" type="button">
+        <div class="pw-method-icon">📄</div>
+        <h3>Write Manually</h3>
+        <p>Open the writing editor and create your document yourself, with formatting and export tools.</p>
+      </button>
+    </div>
+  </section>
+
+  <!-- SCREEN 3: AI BRIEF -->
+  <section class="pw-panel pw-screen" id="pwAiScreen" hidden>
+    <button class="pw-back" id="pwBackMethods" type="button">← Back</button>
+    <h2 class="pw-heading">Tell us about your writing</h2>
+    <p class="pw-description" id="pwAiDescription">Provide some details to prepare your writing brief.</p>
+
+    <form class="pw-form" id="pwAiForm">
+      <div id="pwAiFields"></div>
+      <div class="pw-actions">
+        <button class="pw-btn primary" type="submit">Continue</button>
+      </div>
+    </form>
+
+    <div class="pw-notice" style="margin-top:18px">
+      Your answers will be used to prepare the AI writing request. AI generation will be enabled when the JScan AI backend is connected.
+    </div>
+  </section>
+
+  <!-- SCREEN 4: MANUAL EDITOR -->
+  <section class="pw-panel pw-screen" id="pwManualScreen" hidden>
+    <button class="pw-back" id="pwBackMethodsFromEditor" type="button">← Back to writing options</button>
+
+    <div class="pw-editor-top">
+      <h2 class="pw-heading">Writing workspace</h2>
+      <div class="pw-actions">
+        <button class="pw-btn" id="pwNewDocument" type="button">New document</button>
+        <button class="pw-btn" id="pwMyDocuments" type="button">My documents</button>
+        <button class="pw-btn" id="pwRename" type="button">Rename</button>
+        <button class="pw-btn" id="pwDelete" type="button">Delete</button>
+        <button class="pw-btn primary" id="pwSave" type="button">Save</button>
+        <button class="pw-btn" id="pwWord" type="button">Export Word</button>
+        <button class="pw-btn" id="pwPdf" type="button">Export PDF</button>
+      </div>
+    </div>
+
+    <input class="pw-title-input" id="pwTitle" maxlength="140" placeholder="Document title">
+
+    <div class="pw-toolbar" role="toolbar" aria-label="Document formatting">
+      <button class="pw-tool" type="button" data-command="bold"><strong>B</strong></button>
+      <button class="pw-tool" type="button" data-command="italic"><em>I</em></button>
+      <button class="pw-tool" type="button" data-command="underline"><u>U</u></button>
+      <button class="pw-tool" type="button" data-command="insertUnorderedList">• List</button>
+      <button class="pw-tool" type="button" data-command="insertOrderedList">1. List</button>
+      <button class="pw-tool" type="button" data-command="justifyLeft">Left</button>
+      <button class="pw-tool" type="button" data-command="justifyCenter">Center</button>
+      <button class="pw-tool" type="button" data-command="justifyRight">Right</button>
+      <button class="pw-tool" type="button" data-command="formatBlock" data-value="h2">H2</button>
+      <button class="pw-tool" type="button" data-command="formatBlock" data-value="p">Paragraph</button>
+      <button class="pw-tool" type="button" data-command="undo">↶</button>
+      <button class="pw-tool" type="button" data-command="redo">↷</button>
+    </div>
+
+    <div class="pw-editor" id="pwEditor" contenteditable="true" spellcheck="true" aria-label="Document content"></div>
+
+    <div class="pw-meta">
+      <span id="pwWordCount">0 words</span>
+      <span id="pwSaveStatus">Not saved yet</span>
+    </div>
+  </section>
+
+  <!-- DOCUMENT LIBRARY -->
+  <section class="pw-panel pw-screen" id="pwLibraryScreen" hidden>
+    <button class="pw-back" id="pwBackFromLibrary" type="button">← Back to editor</button>
+    <h2 class="pw-heading">My documents</h2>
+    <p class="pw-description">Open a document you previously saved in this browser.</p>
+    <input class="pw-search" id="pwLibrarySearch" type="search" placeholder="Search your documents...">
+    <div class="pw-library" id="pwDocumentList"></div>
+    <p class="pw-notice">Documents are currently saved in this browser on this device. Cloud saving can be added through Supabase later.</p>
+  </section>
+
+  <!-- AI REQUEST REVIEW -->
+  <section class="pw-panel pw-screen" id="pwAiReviewScreen" hidden>
+    <button class="pw-back" id="pwBackAiForm" type="button">← Edit answers</button>
+    <h2 class="pw-heading">Your writing brief</h2>
+    <p class="pw-description">Review the information you provided.</p>
+    <div id="pwAiSummary"></div>
+    <div class="pw-notice" style="margin-top:18px">
+      Your brief is ready. Actual AI writing and reference generation will be connected in the next development stage.
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer wrap">
+  <a class="brand" href="index.html">
+    <span class="brand-mark">J</span>
+    <span>JScan</span>
+  </a>
+  <span>© 2026 JScan. Your digital workspace.</span>
+  <div>
+    <a href="privacy.html">Privacy</a>
+    <a href="contact.html">Contact</a>
+  </div>
+</footer>
+
+<script src="js/main.js"></script>
+<script src="js/project-writer.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,217 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Activity History — JScan</title>
+
+    <link rel="stylesheet" href="css/style.css">
+
+    <style>
+        .history-page {
+            padding-bottom: 50px;
+        }
+
+        .history-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            margin: 25px 0;
+            flex-wrap: wrap;
+        }
+
+        .history-list {
+            display: grid;
+            gap: 14px;
+        }
+
+        .history-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 20px;
+        }
+
+        .history-item-icon {
+            width: 48px;
+            height: 48px;
+            flex-shrink: 0;
+            display: grid;
+            place-items: center;
+            border-radius: 12px;
+            background: rgba(59, 130, 246, 0.12);
+            color: var(--blue);
+            font-size: 25px;
+            font-weight: 700;
+        }
+
+        .history-item-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .history-item-content h3 {
+            margin: 0 0 5px;
+        }
+
+        .history-item-content p {
+            margin: 4px 0;
+            color: var(--text-secondary);
+            overflow-wrap: anywhere;
+        }
+
+        .history-file-name {
+            font-size: 13px;
+        }
+
+        .history-item-content small {
+            display: block;
+            margin-top: 8px;
+            color: var(--text-secondary);
+        }
+
+        .history-item-actions {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 10px;
+        }
+
+        .history-status {
+            font-size: 12px;
+            color: #16a34a;
+            text-transform: capitalize;
+        }
+
+        .history-item-actions button {
+            font-size: 13px;
+        }
+
+        .history-toolbar .history-back {
+            text-decoration: none;
+        }
+
+        #historyStatus {
+            color: var(--text-secondary);
+            margin: 20px 0;
+        }
+
+        .history-item-actions button:disabled,
+        #clearHistoryBtn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        @media (max-width: 600px) {
+            .history-item {
+                align-items: flex-start;
+                flex-wrap: wrap;
+            }
+
+            .history-item-actions {
+                width: 100%;
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+                padding-left: 64px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header class="site-header">
+
+    <a class="brand" href="index.html">
+        <span class="brand-mark">J</span>
+        <span>JScan</span>
+    </a>
+
+    <nav class="main-nav">
+        <a href="index.html">Home</a>
+        <a class="active" href="tools.html">Explore tools</a>
+        <a href="about.html">About</a>
+        <a href="contact.html">Contact</a>
+    </nav>
+
+    <div class="header-actions">
+        <button
+            class="icon-btn"
+            data-theme-toggle
+            aria-label="Toggle theme">☾</button>
+
+        <a class="btn btn-ghost" href="login.html">Log in</a>
+
+        <a class="btn btn-primary" href="register.html">
+            Create account
+        </a>
+    </div>
+
+</header>
+
+<main class="wrap page-main history-page">
+
+    <div class="breadcrumb">
+        <a href="tools.html">All tools</a>
+        <span>/</span>
+        <span>Activity History</span>
+    </div>
+
+    <div class="page-intro">
+        <span class="eyebrow">JSCAN WORKSPACE</span>
+
+        <h1>Activity History</h1>
+
+        <p>Review your previous JScan activities.</p>
+    </div>
+
+    <div class="history-toolbar">
+
+        <a class="btn btn-ghost history-back" href="tools.html">
+            ← Back to tools
+        </a>
+
+        <button
+            type="button"
+            class="btn btn-ghost"
+            id="clearHistoryBtn"
+            hidden>
+            Clear history
+        </button>
+
+    </div>
+
+    <p id="historyStatus" role="status" aria-live="polite">
+        Checking your account...
+    </p>
+
+    <section
+        class="history-list"
+        id="historyList"
+        aria-label="Your activity history">
+    </section>
+
+</main>
+
+<footer class="site-footer wrap">
+
+    <a class="brand" href="index.html">
+        <span class="brand-mark">J</span>
+        <span>JScan</span>
+    </a>
+
+    <span>© 2026 JScan</span>
+
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase.js"></script>
+<script src="js/main.js"></script>
+<script src="js/history.js"></script>
+
+</body>
+</html>
