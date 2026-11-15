@@ -12,9 +12,20 @@ document.addEventListener("DOMContentLoaded", async () => {
     const historyStatus = document.getElementById("historyStatus");
     const clearHistoryBtn = document.getElementById("clearHistoryBtn");
 
+    const qrPreviewModal = document.getElementById("qrPreviewModal");
+    const qrPreviewImage = document.getElementById("qrPreviewImage");
+    const qrPreviewLoading = document.getElementById("qrPreviewLoading");
+    const qrPreviewTitle = document.getElementById("qrPreviewTitle");
+    const qrPreviewDownload = document.getElementById("qrPreviewDownload");
+    const closeQrPreview = document.getElementById("closeQrPreview");
+    const closeQrPreviewBtn = document.getElementById("closeQrPreviewBtn");
+
     let currentUser = null;
     let isDeleting = false;
     let isClearing = false;
+    let currentPreviewUrl = null;
+    let currentPreviewFileName = "jscan-qr-code.png";
+    let previousFocusElement = null;
 
     /* ==========================================
        CHECK REQUIRED ELEMENTS
@@ -22,6 +33,19 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (!historyList || !historyStatus || !clearHistoryBtn) {
         console.error("JScan: Required history page elements are missing.");
+        return;
+    }
+
+    if (
+        !qrPreviewModal ||
+        !qrPreviewImage ||
+        !qrPreviewLoading ||
+        !qrPreviewTitle ||
+        !qrPreviewDownload ||
+        !closeQrPreview ||
+        !closeQrPreviewBtn
+    ) {
+        console.error("JScan: QR preview modal elements are missing.");
         return;
     }
 
@@ -182,34 +206,91 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     /* ==========================================
-       VIEW SAVED QR CODE
+       CLOSE QR PREVIEW
     ========================================== */
 
-    async function viewQrCode(imagePath, button) {
+    function closePreview() {
+        qrPreviewModal.classList.remove("active");
+        qrPreviewModal.setAttribute("aria-hidden", "true");
+
+        qrPreviewImage.src = "";
+        qrPreviewImage.hidden = true;
+
+        qrPreviewLoading.hidden = false;
+        qrPreviewLoading.textContent = "Loading QR code...";
+
+        currentPreviewUrl = null;
+        currentPreviewFileName = "jscan-qr-code.png";
+
+        document.body.style.overflow = "";
+
+        if (previousFocusElement) {
+            previousFocusElement.focus();
+            previousFocusElement = null;
+        }
+    }
+
+    /* ==========================================
+       OPEN QR PREVIEW INSIDE SAME PAGE
+    ========================================== */
+
+    async function viewQrCode(imagePath, button, fileName) {
         if (button.disabled) return;
 
-        const previewWindow = window.open("about:blank", "_blank");
+        previousFocusElement = button;
 
-        if (!previewWindow) {
-            alert("Please allow pop-ups to view your QR code.");
-            return;
-        }
+        qrPreviewModal.classList.add("active");
+        qrPreviewModal.setAttribute("aria-hidden", "false");
 
-        previewWindow.opener = null;
+        qrPreviewImage.src = "";
+        qrPreviewImage.hidden = true;
+
+        qrPreviewLoading.hidden = false;
+        qrPreviewLoading.textContent = "Loading QR code...";
+
+        qrPreviewTitle.textContent = "QR Code Preview";
+
+        currentPreviewUrl = null;
+        currentPreviewFileName = fileName || "jscan-qr-code.png";
+
+        qrPreviewDownload.disabled = true;
+        qrPreviewDownload.textContent = "Download";
+
+        document.body.style.overflow = "hidden";
 
         button.disabled = true;
         button.textContent = "Opening...";
 
         try {
             const signedUrl = await getQrSignedUrl(imagePath);
-            previewWindow.location.href = signedUrl;
+
+            currentPreviewUrl = signedUrl;
+
+            qrPreviewImage.onload = () => {
+                qrPreviewImage.hidden = false;
+                qrPreviewLoading.hidden = true;
+            };
+
+            qrPreviewImage.onerror = () => {
+                qrPreviewImage.hidden = true;
+                qrPreviewLoading.hidden = false;
+                qrPreviewLoading.textContent =
+                    "Unable to display this QR code. Please try again.";
+
+                qrPreviewDownload.disabled = true;
+            };
+
+            qrPreviewImage.src = signedUrl;
+
+            qrPreviewDownload.disabled = false;
 
         } catch (error) {
             console.error("QR viewing error:", error);
 
-            previewWindow.close();
+            qrPreviewLoading.textContent =
+                "Unable to load this QR code. Please try again.";
 
-            alert("Unable to open this QR code. Please try again.");
+            qrPreviewDownload.disabled = true;
 
         } finally {
             button.disabled = false;
@@ -218,7 +299,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     /* ==========================================
-       DOWNLOAD SAVED QR CODE
+       DOWNLOAD QR CODE
     ========================================== */
 
     async function downloadQrCode(imagePath, button, fileName) {
@@ -229,27 +310,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         try {
             const signedUrl = await getQrSignedUrl(imagePath);
-            const response = await fetch(signedUrl);
 
-            if (!response.ok) {
-                throw new Error("Unable to download the QR image.");
-            }
-
-            const imageBlob = await response.blob();
-            const objectUrl = URL.createObjectURL(imageBlob);
-
-            const link = document.createElement("a");
-
-            link.href = objectUrl;
-            link.download = fileName || "jscan-qr-code.png";
-
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-
-            setTimeout(() => {
-                URL.revokeObjectURL(objectUrl);
-            }, 1500);
+            await downloadFromUrl(signedUrl, fileName);
 
         } catch (error) {
             console.error("QR download error:", error);
@@ -261,6 +323,82 @@ document.addEventListener("DOMContentLoaded", async () => {
             button.textContent = "Download";
         }
     }
+
+    /* ==========================================
+       DOWNLOAD FROM URL
+    ========================================== */
+
+    async function downloadFromUrl(url, fileName) {
+        const response = await fetch(url);
+
+        if (!response.ok) {
+            throw new Error("Unable to download the QR image.");
+        }
+
+        const imageBlob = await response.blob();
+        const objectUrl = URL.createObjectURL(imageBlob);
+
+        const link = document.createElement("a");
+
+        link.href = objectUrl;
+        link.download = fileName || "jscan-qr-code.png";
+
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+
+        setTimeout(() => {
+            URL.revokeObjectURL(objectUrl);
+        }, 1500);
+    }
+
+    /* ==========================================
+       PREVIEW DOWNLOAD BUTTON
+    ========================================== */
+
+    qrPreviewDownload.addEventListener("click", async () => {
+        if (!currentPreviewUrl || qrPreviewDownload.disabled) return;
+
+        qrPreviewDownload.disabled = true;
+        qrPreviewDownload.textContent = "Downloading...";
+
+        try {
+            await downloadFromUrl(
+                currentPreviewUrl,
+                currentPreviewFileName
+            );
+
+        } catch (error) {
+            console.error("Preview download error:", error);
+            alert("Unable to download this QR code. Please try again.");
+
+        } finally {
+            qrPreviewDownload.disabled = false;
+            qrPreviewDownload.textContent = "Download";
+        }
+    });
+
+    /* ==========================================
+       PREVIEW CLOSE BUTTONS
+    ========================================== */
+
+    closeQrPreview.addEventListener("click", closePreview);
+    closeQrPreviewBtn.addEventListener("click", closePreview);
+
+    qrPreviewModal.addEventListener("click", event => {
+        if (event.target === qrPreviewModal) {
+            closePreview();
+        }
+    });
+
+    document.addEventListener("keydown", event => {
+        if (
+            event.key === "Escape" &&
+            qrPreviewModal.classList.contains("active")
+        ) {
+            closePreview();
+        }
+    });
 
     /* ==========================================
        RENDER HISTORY
@@ -327,7 +465,8 @@ document.addEventListener("DOMContentLoaded", async () => {
                             <button
                                 type="button"
                                 class="btn btn-ghost view-qr-btn"
-                                data-image-path="${escapeHTML(imagePath)}">
+                                data-image-path="${escapeHTML(imagePath)}"
+                                data-file-name="${escapeHTML(downloadFileName)}">
                                 View
                             </button>
 
@@ -402,18 +541,11 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (error) {
                 console.error("History deletion error:", error);
 
-                alert(
-                    "Unable to delete this activity. Please try again."
-                );
-
+                alert("Unable to delete this activity. Please try again.");
                 return;
             }
 
             if (!data || data.length === 0) {
-                console.warn(
-                    "No activity record was deleted. Check the DELETE policy and record ID."
-                );
-
                 alert(
                     "The activity was not deleted from the database. Please check your database permissions."
                 );
@@ -426,7 +558,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         } catch (error) {
             console.error("Unexpected history deletion error:", error);
-
             alert("Something went wrong. Please try again.");
 
         } finally {
@@ -448,9 +579,10 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (isDeleting || isClearing) return;
 
             const imagePath = viewButton.dataset.imagePath;
+            const fileName = viewButton.dataset.fileName;
 
             if (imagePath) {
-                await viewQrCode(imagePath, viewButton);
+                await viewQrCode(imagePath, viewButton, fileName);
             }
 
             return;
@@ -515,7 +647,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             if (error) {
                 console.error("Clear history error:", error);
-
                 alert("Unable to clear your history.");
                 return;
             }
@@ -530,7 +661,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         } catch (error) {
             console.error("Unexpected clear history error:", error);
-
             alert("Something went wrong. Please try again.");
 
         } finally {
