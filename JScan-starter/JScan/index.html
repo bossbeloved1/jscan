@@ -5,12 +5,67 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="JScan brings scanning, QR generation, document conversion and productivity tools together.">
+  <meta name="theme-color" content="#2563eb">
   <title>JScan — Your digital workspace</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
+
+  <!-- Homepage mobile navigation adjustments -->
+  <style>
+    .mobile-auth-links {
+      display: none;
+    }
+
+    @media (max-width: 768px) {
+      .mobile-auth-links {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        width: 100%;
+        padding: 12px 0 6px;
+      }
+
+      .mobile-auth-links a {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        box-sizing: border-box;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .hero h1 {
+        overflow-wrap: break-word;
+      }
+
+      .hero-actions {
+        flex-wrap: wrap;
+      }
+
+      .hero-actions .btn {
+        max-width: 100%;
+        box-sizing: border-box;
+      }
+
+      .cta-band {
+        flex-wrap: wrap;
+      }
+
+      .cta-band .btn {
+        max-width: 100%;
+        box-sizing: border-box;
+      }
+
+      .site-footer {
+        flex-wrap: wrap;
+        gap: 16px;
+      }
+    }
+  </style>
 </head>
 
 <body>
@@ -26,13 +81,19 @@
     <a href="tools.html">Explore tools</a>
     <a href="about.html">About</a>
     <a href="contact.html">Contact</a>
+
+    <!-- Login and Create Account for mobile navigation -->
+    <div class="mobile-auth-links">
+      <a class="btn btn-ghost" href="login.html">Log in</a>
+      <a class="btn btn-primary" href="register.html">Create account</a>
+    </div>
   </nav>
 
   <div class="header-actions">
     <button class="icon-btn" data-theme-toggle aria-label="Toggle theme">☾</button>
     <a class="btn btn-ghost" href="login.html">Log in</a>
     <a class="btn btn-primary" href="register.html">Create account</a>
-    <button class="menu-toggle" aria-label="Open menu">☰</button>
+    <button class="menu-toggle" aria-label="Open menu" aria-expanded="false">☰</button>
   </div>
 </header>
 
