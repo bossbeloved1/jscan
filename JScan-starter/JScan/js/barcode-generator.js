@@ -40,7 +40,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function logActivity(action, fileName, details = {}) {
 
-        // Retrieve Supabase when logging is needed.
         const db = window.jscanDB;
 
         if (!db) {
@@ -331,8 +330,10 @@ document.addEventListener('DOMContentLoaded', () => {
             showMessage('Barcode generated successfully!');
 
 
-            // Record deliberate generation only.
-            // Automatic colour updates are not logged.
+            /* ==========================================
+               RECORD BARCODE GENERATION
+               Include encoded value for future recreation
+            ========================================== */
 
             if (shouldLog) {
 
@@ -340,6 +341,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     'Barcode generated',
                     `Barcode (${format})`,
                     {
+                        barcode_value: value,
                         format: format,
                         foreground_color: fg.value,
                         background_color: bg.value
@@ -565,7 +567,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 'Barcode downloaded (SVG)',
                 'jscan-barcode.svg',
                 {
+                    barcode_value: barcodeText.value.trim(),
                     format: barcodeFormat.value,
+                    foreground_color: fg.value,
+                    background_color: bg.value,
                     file_type: 'SVG'
                 }
             );
@@ -661,7 +666,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         'Barcode downloaded (PNG)',
                         'jscan-barcode.png',
                         {
+                            barcode_value: barcodeText.value.trim(),
                             format: barcodeFormat.value,
+                            foreground_color: fg.value,
+                            background_color: bg.value,
                             file_type: 'PNG'
                         }
                     );
