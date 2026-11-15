@@ -15,8 +15,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const registerBtn = document.getElementById('registerBtn');
     const message = document.getElementById('registerMessage');
 
-    // Display messages
+    // ======================================
+    // DISPLAY FEEDBACK MESSAGES
+    // ======================================
+
     function showMessage(text, type = 'error') {
+
         if (!message) return;
 
         message.textContent = text;
@@ -27,11 +31,35 @@ document.addEventListener('DOMContentLoaded', () => {
             '#ef4444';
     }
 
-    // Check Supabase connection
-    if (!window.jscanDB) {
+    // ======================================
+    // CHECK REQUIRED ELEMENTS
+    // ======================================
+
+    if (
+        !registerForm ||
+        !fullName ||
+        !email ||
+        !password ||
+        !confirmPassword ||
+        !registerBtn
+    ) {
+        console.error('JScan: Registration form elements are missing.');
+        showMessage('Unable to load the registration form correctly. Please refresh the page.');
+        return;
+    }
+
+    // ======================================
+    // CHECK SUPABASE CONNECTION
+    // ======================================
+
+    const db = window.jscanDB;
+
+    if (!db) {
+
         showMessage('Connection error. Please refresh the page.');
 
-        if (registerBtn) registerBtn.disabled = true;
+        registerBtn.disabled = true;
+
         return;
     }
 
@@ -64,58 +92,91 @@ document.addEventListener('DOMContentLoaded', () => {
         const passwordValue = password.value;
         const confirmValue = confirmPassword.value;
 
+        // Validate full name
         if (!nameValue) {
+
             showMessage('Please enter your full name.');
             fullName.focus();
+
             return;
         }
 
+        // Validate email
         if (!emailValue) {
+
             showMessage('Please enter your email address.');
             email.focus();
+
             return;
         }
 
-        // Validate all five password requirements
+        // Validate email format
+        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        if (!emailPattern.test(emailValue)) {
+
+            showMessage('Please enter a valid email address.');
+            email.focus();
+
+            return;
+        }
+
+        // Validate password requirements
         const checks = validatePassword(passwordValue);
 
         if (!checks.length) {
+
             showMessage('Your password must contain at least 8 characters.');
             password.focus();
+
             return;
         }
 
         if (!checks.upper) {
+
             showMessage('Add at least one uppercase letter to your password.');
             password.focus();
+
             return;
         }
 
         if (!checks.lower) {
+
             showMessage('Add at least one lowercase letter to your password.');
             password.focus();
+
             return;
         }
 
         if (!checks.number) {
+
             showMessage('Add at least one number to your password.');
             password.focus();
+
             return;
         }
 
         if (!checks.special) {
+
             showMessage('Add at least one special character to your password.');
             password.focus();
+
             return;
         }
 
+        // Confirm password
         if (passwordValue !== confirmValue) {
+
             showMessage('Your passwords do not match.');
             confirmPassword.focus();
+
             return;
         }
 
-        // Disable button while registering
+        // ======================================
+        // START REGISTRATION
+        // ======================================
+
         registerBtn.disabled = true;
         registerBtn.textContent = 'Creating your account...';
 
@@ -123,30 +184,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
 
-            const { data, error } =
-                await window.jscanDB.auth.signUp({
+            const { data, error } = await db.auth.signUp({
 
-                    email: emailValue,
-                    password: passwordValue,
+                email: emailValue,
+                password: passwordValue,
 
-                    options: {
-                        data: {
-                            display_name: nameValue,
-                            full_name: nameValue
-                        }
+                options: {
+
+                    data: {
+                        display_name: nameValue,
+                        full_name: nameValue
                     }
 
-                });
+                }
+
+            });
 
             if (error) throw error;
 
             if (!data.user) {
+
                 throw new Error(
                     'We could not create your account. Please try again.'
                 );
+
             }
 
-            // Email OTP verification required
+            // ======================================
+            // EMAIL OTP VERIFICATION REQUIRED
+            // ======================================
+
             if (!data.session) {
 
                 sessionStorage.setItem(
@@ -155,24 +222,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 );
 
                 showMessage(
-                    'Account created! Sending your verification code...',
+                    'Account created! Redirecting to email verification...',
                     'success'
                 );
 
                 window.location.href =
-                    'verify-email.html?email=' +
+                    '/verify-email.html?email=' +
                     encodeURIComponent(emailValue);
 
                 return;
             }
 
-            // Immediate registration
+            // ======================================
+            // IMMEDIATE REGISTRATION
+            // ======================================
+
             showMessage(
                 'Account created successfully! Redirecting...',
                 'success'
             );
 
-            window.location.href = 'dashboard.html';
+            window.location.replace('/dashboard.html');
 
         } catch (error) {
 
@@ -181,17 +251,20 @@ document.addEventListener('DOMContentLoaded', () => {
             let errorMessage =
                 error.message || 'Something went wrong. Please try again.';
 
+            const errorText = errorMessage.toLowerCase();
+
             if (
-                errorMessage.toLowerCase().includes('already registered') ||
-                errorMessage.toLowerCase().includes('already exists')
+                errorText.includes('already registered') ||
+                errorText.includes('already exists') ||
+                errorText.includes('user already registered')
             ) {
+
                 errorMessage =
                     'This email already has an account. Please log in.';
+
             }
 
             showMessage(errorMessage);
-
-        } finally {
 
             registerBtn.disabled = false;
             registerBtn.textContent = 'Create free account';
