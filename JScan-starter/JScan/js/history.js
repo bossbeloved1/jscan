@@ -82,6 +82,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const name = String(tool ?? "").toLowerCase();
 
         if (name.includes("qr")) return "▦";
+        if (name.includes("barcode")) return "▥";
         if (name.includes("compress")) return "⇣";
         if (name.includes("merge")) return "⊕";
         if (name.includes("split")) return "✂";
@@ -90,6 +91,162 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (name.includes("ocr")) return "T";
 
         return "▤";
+    }
+
+    /* ==========================================
+       GET QR IMAGE PATH
+    ========================================== */
+
+    function getQrImagePath(record) {
+        const toolName = String(record.tool_name || "").toLowerCase();
+
+        if (!toolName.includes("qr")) {
+            return null;
+        }
+
+        let details = record.details;
+
+        // Handle JSON details returned as a string.
+        if (typeof details === "string") {
+            try {
+                details = JSON.parse(details);
+            } catch {
+                return null;
+            }
+        }
+
+        if (!details || typeof details !== "object") {
+            return null;
+        }
+
+        const imagePath = details.image_path;
+
+        if (
+            typeof imagePath !== "string" ||
+            !imagePath.trim() ||
+            imagePath.startsWith("/") ||
+            imagePath.includes("..")
+        ) {
+            return null;
+        }
+
+        // Ensure the image belongs to the logged-in user.
+        if (!imagePath.startsWith(`${currentUser.id}/`)) {
+            return null;
+        }
+
+        return imagePath;
+    }
+
+    /* ==========================================
+       CREATE QR IMAGE SIGNED URL
+    ========================================== */
+
+    async function getQrSignedUrl(imagePath) {
+        const { data, error } = await db
+            .storage
+            .from("qr-codes")
+            .createSignedUrl(imagePath, 300);
+
+        if (error) {
+            console.error("QR image URL error:", error);
+            throw error;
+        }
+
+        if (!data?.signedUrl) {
+            throw new Error("Unable to retrieve the QR code image.");
+        }
+
+        return data.signedUrl;
+    }
+
+    /* ==========================================
+       VIEW SAVED QR CODE
+    ========================================== */
+
+    async function viewQrCode(imagePath, button) {
+        if (button.disabled) return;
+
+        // Open a blank tab immediately to avoid popup blocking.
+        const previewWindow = window.open("about:blank", "_blank");
+
+        if (!previewWindow) {
+            alert("Please allow pop-ups to view your QR code.");
+            return;
+        }
+
+        previewWindow.opener = null;
+
+        button.disabled = true;
+        button.textContent = "Opening...";
+
+        try {
+            const signedUrl = await getQrSignedUrl(imagePath);
+
+            previewWindow.location.href = signedUrl;
+
+        } catch (error) {
+            console.error("QR viewing error:", error);
+
+            previewWindow.close();
+
+            alert(
+                "Unable to open this QR code. Please try again."
+            );
+
+        } finally {
+            button.disabled = false;
+            button.textContent = "View";
+        }
+    }
+
+    /* ==========================================
+       DOWNLOAD SAVED QR CODE
+    ========================================== */
+
+    async function downloadQrCode(imagePath, button, fileName) {
+        if (button.disabled) return;
+
+        button.disabled = true;
+        button.textContent = "Downloading...";
+
+        try {
+            const signedUrl = await getQrSignedUrl(imagePath);
+
+            const response = await fetch(signedUrl);
+
+            if (!response.ok) {
+                throw new Error("Unable to download the QR image.");
+            }
+
+            const imageBlob = await response.blob();
+
+            const objectUrl = URL.createObjectURL(imageBlob);
+
+            const link = document.createElement("a");
+
+            link.href = objectUrl;
+            link.download = fileName || "jscan-qr-code.png";
+
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+
+            setTimeout(() => {
+                URL.revokeObjectURL(objectUrl);
+            }, 1500);
+
+        } catch (error) {
+            console.error("QR download error:", error);
+
+            alert(
+                "Unable to download this QR code. Please try again."
+            );
+
+        } finally {
+            button.disabled = false;
+            button.textContent = "Download";
+        }
     }
 
     /* ==========================================
@@ -115,42 +272,69 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         clearHistoryBtn.hidden = false;
 
-        historyList.innerHTML = records.map(record => `
-            <article class="panel history-item"
-                data-history-id="${escapeHTML(record.id)}">
+        historyList.innerHTML = records.map(record => {
+            const imagePath = getQrImagePath(record);
 
-                <div class="history-item-icon">
-                    ${escapeHTML(getToolIcon(record.tool_name))}
-                </div>
+            const fileName = record.file_name || "jscan-qr-code.png";
 
-                <div class="history-item-content">
-                    <h3>${escapeHTML(record.tool_name)}</h3>
+            return `
+                <article class="panel history-item"
+                    data-history-id="${escapeHTML(record.id)}">
 
-                    <p>${escapeHTML(record.action)}</p>
+                    <div class="history-item-icon">
+                        ${escapeHTML(getToolIcon(record.tool_name))}
+                    </div>
 
-                    ${record.file_name ? `
-                        <p class="history-file-name">
-                            ${escapeHTML(record.file_name)}
-                        </p>
-                    ` : ""}
+                    <div class="history-item-content">
+                        <h3>${escapeHTML(record.tool_name)}</h3>
 
-                    <small>${escapeHTML(formatDate(record.created_at))}</small>
-                </div>
+                        <p>${escapeHTML(record.action)}</p>
 
-                <div class="history-item-actions">
-                    <span class="history-status">
-                        ${escapeHTML(record.status)}
-                    </span>
+                        ${record.file_name ? `
+                            <p class="history-file-name">
+                                ${escapeHTML(record.file_name)}
+                            </p>
+                        ` : ""}
 
-                    <button
-                        type="button"
-                        class="btn btn-ghost delete-history-btn"
-                        data-id="${escapeHTML(record.id)}">
-                        Delete
-                    </button>
-                </div>
-            </article>
-        `).join("");
+                        <small>
+                            ${escapeHTML(formatDate(record.created_at))}
+                        </small>
+                    </div>
+
+                    <div class="history-item-actions">
+
+                        <span class="history-status">
+                            ${escapeHTML(record.status)}
+                        </span>
+
+                        ${imagePath ? `
+                            <button
+                                type="button"
+                                class="btn btn-ghost view-qr-btn"
+                                data-image-path="${escapeHTML(imagePath)}">
+                                View
+                            </button>
+
+                            <button
+                                type="button"
+                                class="btn btn-ghost download-qr-btn"
+                                data-image-path="${escapeHTML(imagePath)}"
+                                data-file-name="${escapeHTML(fileName)}">
+                                Download
+                            </button>
+                        ` : ""}
+
+                        <button
+                            type="button"
+                            class="btn btn-ghost delete-history-btn"
+                            data-id="${escapeHTML(record.id)}">
+                            Delete
+                        </button>
+
+                    </div>
+                </article>
+            `;
+        }).join("");
     }
 
     /* ==========================================
@@ -217,15 +401,49 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     /* ==========================================
-       DELETE BUTTON EVENT
+       HISTORY ACTION BUTTONS
     ========================================== */
 
     historyList.addEventListener("click", async event => {
-        const button = event.target.closest(".delete-history-btn");
 
-        if (!button || isDeleting || isClearing) return;
+        const viewButton = event.target.closest(".view-qr-btn");
 
-        const id = button.dataset.id;
+        const downloadButton = event.target.closest(".download-qr-btn");
+
+        const deleteButton = event.target.closest(".delete-history-btn");
+
+        if (viewButton) {
+            if (isDeleting || isClearing) return;
+
+            const imagePath = viewButton.dataset.imagePath;
+
+            if (imagePath) {
+                await viewQrCode(imagePath, viewButton);
+            }
+
+            return;
+        }
+
+        if (downloadButton) {
+            if (isDeleting || isClearing) return;
+
+            const imagePath = downloadButton.dataset.imagePath;
+            const fileName = downloadButton.dataset.fileName;
+
+            if (imagePath) {
+                await downloadQrCode(
+                    imagePath,
+                    downloadButton,
+                    fileName
+                );
+            }
+
+            return;
+        }
+
+        if (!deleteButton || isDeleting || isClearing) return;
+
+        const id = deleteButton.dataset.id;
 
         if (!id) return;
 
@@ -233,8 +451,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             return;
         }
 
-        button.disabled = true;
-        button.textContent = "Deleting...";
+        deleteButton.disabled = true;
+        deleteButton.textContent = "Deleting...";
 
         await deleteHistory(id);
     });
@@ -278,7 +496,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         } finally {
             isClearing = false;
             clearHistoryBtn.disabled = false;
-            clearHistoryBtn.textContent = "Clear History";
+            clearHistoryBtn.textContent = "Clear history";
         }
     });
 
@@ -300,7 +518,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     ========================================== */
 
     const { data: authListener } = db.auth.onAuthStateChange(
-        (event) => {
+        event => {
             if (event === "SIGNED_OUT") {
                 window.location.replace("/login.html");
             }
