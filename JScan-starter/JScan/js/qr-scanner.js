@@ -303,6 +303,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
 
     imageInput.addEventListener('change', async () => {
+        console.log('JScan: Image upload event fired.');
+alert('Image selected successfully!');
 
         const file = imageInput.files?.[0];
 
