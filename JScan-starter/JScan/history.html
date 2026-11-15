@@ -105,6 +105,100 @@
             cursor: not-allowed;
         }
 
+        /* ==========================================
+           QR CODE PREVIEW MODAL
+        ========================================== */
+
+        .qr-preview-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.72);
+            backdrop-filter: blur(5px);
+        }
+
+        .qr-preview-modal.active {
+            display: flex;
+        }
+
+        .qr-preview-content {
+            position: relative;
+            width: 100%;
+            max-width: 430px;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 28px;
+            border-radius: 18px;
+            background: var(--card-bg, var(--surface, #ffffff));
+            color: var(--text-primary);
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .qr-preview-close {
+            position: absolute;
+            top: 12px;
+            right: 14px;
+            width: 36px;
+            height: 36px;
+            border: none;
+            border-radius: 50%;
+            background: rgba(128, 128, 128, 0.14);
+            color: inherit;
+            font-size: 23px;
+            cursor: pointer;
+        }
+
+        .qr-preview-content h2 {
+            margin: 5px 35px 8px;
+            font-size: 21px;
+        }
+
+        .qr-preview-description {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-bottom: 22px;
+        }
+
+        .qr-preview-image-wrapper {
+            display: grid;
+            place-items: center;
+            min-height: 220px;
+            padding: 18px;
+            border-radius: 14px;
+            background: #ffffff;
+            border: 1px solid rgba(128, 128, 128, 0.2);
+        }
+
+        .qr-preview-image {
+            display: block;
+            width: 100%;
+            max-width: 300px;
+            height: auto;
+            object-fit: contain;
+        }
+
+        .qr-preview-loading {
+            color: #555555;
+            font-size: 14px;
+        }
+
+        .qr-preview-actions {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 22px;
+            flex-wrap: wrap;
+        }
+
+        .qr-preview-actions button {
+            min-width: 115px;
+        }
+
         @media (max-width: 600px) {
             .history-item {
                 align-items: flex-start;
@@ -117,6 +211,14 @@
                 justify-content: space-between;
                 align-items: center;
                 padding-left: 64px;
+            }
+
+            .qr-preview-content {
+                padding: 24px 18px;
+            }
+
+            .qr-preview-image {
+                max-width: 250px;
             }
         }
     </style>
@@ -196,6 +298,73 @@
     </section>
 
 </main>
+
+<!-- ==========================================
+     QR CODE PREVIEW MODAL
+========================================== -->
+
+<div
+    class="qr-preview-modal"
+    id="qrPreviewModal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="qrPreviewTitle"
+    aria-hidden="true">
+
+    <div class="qr-preview-content">
+
+        <button
+            type="button"
+            class="qr-preview-close"
+            id="closeQrPreview"
+            aria-label="Close QR preview">
+            ×
+        </button>
+
+        <h2 id="qrPreviewTitle">QR Code Preview</h2>
+
+        <p class="qr-preview-description">
+            Your saved QR code
+        </p>
+
+        <div class="qr-preview-image-wrapper">
+
+            <p
+                class="qr-preview-loading"
+                id="qrPreviewLoading">
+                Loading QR code...
+            </p>
+
+            <img
+                src=""
+                alt="Saved QR code preview"
+                class="qr-preview-image"
+                id="qrPreviewImage"
+                hidden>
+
+        </div>
+
+        <div class="qr-preview-actions">
+
+            <button
+                type="button"
+                class="btn btn-primary"
+                id="qrPreviewDownload">
+                Download
+            </button>
+
+            <button
+                type="button"
+                class="btn btn-ghost"
+                id="closeQrPreviewBtn">
+                Close
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
 
 <footer class="site-footer wrap">
 
