@@ -1,4 +1,8 @@
 
+/* ==========================================
+   JSCAN - ACTIVITY HISTORY
+========================================== */
+
 document.addEventListener("DOMContentLoaded", async () => {
     const db = window.jscanDB;
 
@@ -6,20 +10,36 @@ document.addEventListener("DOMContentLoaded", async () => {
     const historyStatus = document.getElementById("historyStatus");
     const clearHistoryBtn = document.getElementById("clearHistoryBtn");
 
+    let currentUser = null;
+    let isDeleting = false;
+    let isClearing = false;
+    let authSubscription = null;
+
+    function showMessage(message) {
+        if (historyStatus) {
+            historyStatus.textContent = message;
+        }
+    }
+
     if (!db) {
-        historyStatus.textContent =
-            "Unable to connect to JScan. Please refresh the page.";
+        showMessage("Unable to connect to JScan. Please refresh the page.");
         return;
     }
 
-    let currentUser = null;
-
-    function showMessage(message) {
-        historyStatus.textContent = message;
+    if (!historyList || !clearHistoryBtn) {
+        console.error("JScan: Required history page elements are missing.");
+        showMessage("Unable to load the history page. Please refresh.");
+        return;
     }
 
     function formatDate(date) {
-        return new Date(date).toLocaleString(undefined, {
+        const parsedDate = new Date(date);
+
+        if (Number.isNaN(parsedDate.getTime())) {
+            return "Date unavailable";
+        }
+
+        return parsedDate.toLocaleString(undefined, {
             dateStyle: "medium",
             timeStyle: "short"
         });
@@ -36,7 +56,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     function getToolIcon(tool) {
-        const name = tool.toLowerCase();
+        const name = String(tool ?? "").toLowerCase();
 
         if (name.includes("qr")) return "▦";
         if (name.includes("compress")) return "⇣";
@@ -126,25 +146,44 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     async function deleteHistory(id) {
-        const { error } = await db
-            .from("activity_history")
-            .delete()
-            .eq("id", id)
-            .eq("user_id", currentUser.id);
+        if (isDeleting || isClearing) return;
 
-        if (error) {
-            console.error("History deletion error:", error);
-            alert("Unable to delete this activity.");
-            return;
+        isDeleting = true;
+
+        const buttons = historyList.querySelectorAll(".delete-history-btn");
+
+        buttons.forEach(button => {
+            button.disabled = true;
+        });
+
+        try {
+            const { error } = await db
+                .from("activity_history")
+                .delete()
+                .eq("id", id)
+                .eq("user_id", currentUser.id);
+
+            if (error) {
+                console.error("History deletion error:", error);
+                alert("Unable to delete this activity.");
+                return;
+            }
+
+            await loadHistory();
+
+        } catch (error) {
+            console.error("Unexpected deletion error:", error);
+            alert("Something went wrong. Please try again.");
+
+        } finally {
+            isDeleting = false;
         }
-
-        await loadHistory();
     }
 
     historyList.addEventListener("click", async event => {
         const button = event.target.closest(".delete-history-btn");
 
-        if (!button) return;
+        if (!button || isDeleting || isClearing) return;
 
         const id = button.dataset.id;
 
@@ -154,51 +193,78 @@ document.addEventListener("DOMContentLoaded", async () => {
             return;
         }
 
-        button.disabled = true;
         button.textContent = "Deleting...";
-
         await deleteHistory(id);
     });
 
     clearHistoryBtn.addEventListener("click", async () => {
-        if (!confirm("Are you sure you want to clear your entire activity history?")) {
+        if (isClearing || isDeleting) return;
+
+        if (!confirm(
+            "Are you sure you want to clear your entire activity history?"
+        )) {
             return;
         }
 
+        isClearing = true;
         clearHistoryBtn.disabled = true;
+        clearHistoryBtn.textContent = "Clearing...";
 
-        const { error } = await db
-            .from("activity_history")
-            .delete()
-            .eq("user_id", currentUser.id);
+        try {
+            const { error } = await db
+                .from("activity_history")
+                .delete()
+                .eq("user_id", currentUser.id);
 
-        clearHistoryBtn.disabled = false;
+            if (error) {
+                console.error("Clear history error:", error);
+                alert("Unable to clear your history.");
+                return;
+            }
 
-        if (error) {
-            console.error("Clear history error:", error);
-            alert("Unable to clear your history.");
-            return;
+            await loadHistory();
+
+        } catch (error) {
+            console.error("Unexpected clear history error:", error);
+            alert("Something went wrong. Please try again.");
+
+        } finally {
+            isClearing = false;
+            clearHistoryBtn.disabled = false;
+            clearHistoryBtn.textContent = "Clear History";
         }
-
-        await loadHistory();
     });
 
     // Verify the user's login session.
-    const { data, error } = await db.auth.getSession();
+    try {
+        const { data, error } = await db.auth.getSession();
 
-    if (error || !data.session?.user) {
-        window.location.replace("login.html");
+        if (error || !data.session?.user) {
+            window.location.replace("/login.html");
+            return;
+        }
+
+        currentUser = data.session.user;
+
+    } catch (error) {
+        console.error("Session verification error:", error);
+        window.location.replace("/login.html");
         return;
     }
 
-    currentUser = data.session.user;
-
-    // Keep the page protected if the user logs out.
-    db.auth.onAuthStateChange((event, session) => {
-        if (event === "SIGNED_OUT" || !session?.user) {
-            window.location.replace("login.html");
+    // Keep the page protected when the user signs out.
+    const { data: authData } = db.auth.onAuthStateChange(event => {
+        if (event === "SIGNED_OUT") {
+            window.location.replace("/login.html");
         }
     });
+
+    authSubscription = authData?.subscription;
+
+    // Clean up the authentication listener when leaving the page.
+    window.addEventListener("pagehide", () => {
+        authSubscription?.unsubscribe();
+    }, { once: true });
 
     await loadHistory();
 });
