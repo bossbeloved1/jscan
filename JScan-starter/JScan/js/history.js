@@ -1,8 +1,10 @@
 
 /* ==========================================
    JSCAN - ACTIVITY HISTORY
-   QR + BARCODE VIEW AND DOWNLOAD
-   PAGINATION + DELETE
+   QR + BARCODE + ALL TOOL FILES
+   5-DAY TEMPORARY FILE RETENTION
+   VIEW + DOWNLOAD + DELETE
+   PAGINATION + AUTHENTICATION
 ========================================== */
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -33,15 +35,14 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     let currentPageRecords = [];
 
-    /* ==========================================
-       PAGINATION SETTINGS
-    ========================================== */
-
     const PAGE_SIZE = 10;
 
     let currentPage = 1;
     let totalRecords = 0;
     let totalPages = 0;
+
+    const TEMP_BUCKET = "jscan-temporary-files";
+    const QR_BUCKET = "qr-codes";
 
     /* ==========================================
        CHECK REQUIRED ELEMENTS
@@ -65,10 +66,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
     }
 
-    /* ==========================================
-       CHECK SUPABASE CONNECTION
-    ========================================== */
-
     if (!db) {
         historyStatus.textContent =
             "Unable to connect to JScan. Please refresh the page.";
@@ -76,26 +73,92 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     /* ==========================================
-       CREATE PAGINATION CONTAINER
+       CREATE TEMPORARY FILE NOTICE
     ========================================== */
 
-    const paginationContainer = document.createElement("div");
+    const temporaryNotice = document.createElement("div");
 
-    paginationContainer.id = "historyPagination";
-    paginationContainer.className = "history-pagination";
+    temporaryNotice.className = "jscan-temporary-notice";
 
-    historyList.insertAdjacentElement(
-        "afterend",
-        paginationContainer
-    );
+    temporaryNotice.innerHTML = `
+        <strong>Temporary File Notice</strong>
+        <p>
+            Files generated with the other JScan tools are automatically
+            deleted after 5 days. You can view, download or delete them
+            at any time before then.
+        </p>
+        <p>
+            After 5 days, the generated file is permanently deleted,
+            but its activity history remains until you delete it.
+            Downloading a file does not extend its storage period.
+        </p>
+    `;
 
-    /* ==========================================
-       PAGINATION STYLES
-    ========================================== */
+    historyList.parentNode.insertBefore(temporaryNotice, historyList);
 
-    const paginationStyles = document.createElement("style");
+    const style = document.createElement("style");
 
-    paginationStyles.textContent = `
+    style.textContent = `
+        .jscan-temporary-notice {
+            margin: 0 0 20px;
+            padding: 16px;
+            border: 1px solid var(--border-color, #ddd);
+            border-left: 4px solid var(--blue, #2563eb);
+            border-radius: 10px;
+            background: var(--card-bg, transparent);
+            color: var(--text-color, inherit);
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .jscan-temporary-notice strong {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 14px;
+        }
+
+        .jscan-temporary-notice p {
+            margin: 5px 0;
+            color: var(--text-secondary, #777);
+        }
+
+        .history-expired {
+            color: #dc5555;
+            font-weight: 600;
+        }
+
+        .history-permanent {
+            color: #16a36a;
+            font-weight: 600;
+        }
+
+        .history-expiry {
+            display: block;
+            margin-top: 5px;
+            color: var(--text-secondary, #777);
+            font-size: 12px;
+        }
+
+        .history-result {
+            display: block;
+            margin-top: 8px;
+            overflow-wrap: anywhere;
+            font-size: 13px;
+            color: var(--text-secondary, #777);
+        }
+
+        .history-item-actions {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .history-item-actions button:disabled {
+            opacity: .5;
+            cursor: not-allowed;
+        }
+
         .history-pagination {
             width: 100%;
             margin: 24px 0 35px;
@@ -126,7 +189,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             color: var(--text-color, inherit);
             cursor: pointer;
             font-size: 14px;
-            transition: 0.2s ease;
+            transition: .2s ease;
         }
 
         .history-page-btn:hover:not(:disabled) {
@@ -141,7 +204,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         .history-page-btn:disabled {
-            opacity: 0.45;
+            opacity: .45;
             cursor: not-allowed;
         }
 
@@ -164,19 +227,26 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     `;
 
-    document.head.appendChild(paginationStyles);
+    document.head.appendChild(style);
 
     /* ==========================================
-       MESSAGE HELPER
+       PAGINATION CONTAINER
+    ========================================== */
+
+    const paginationContainer = document.createElement("div");
+
+    paginationContainer.id = "historyPagination";
+    paginationContainer.className = "history-pagination";
+
+    historyList.insertAdjacentElement("afterend", paginationContainer);
+
+    /* ==========================================
+       HELPERS
     ========================================== */
 
     function showMessage(message) {
         historyStatus.textContent = message;
     }
-
-    /* ==========================================
-       DATE FORMATTER
-    ========================================== */
 
     function formatDate(date) {
         const parsedDate = new Date(date);
@@ -191,10 +261,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
 
-    /* ==========================================
-       HTML ESCAPE HELPER
-    ========================================== */
-
     function escapeHTML(value) {
         return String(value ?? "").replace(/[&<>"']/g, char => ({
             "&": "&amp;",
@@ -204,10 +270,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             "'": "&#039;"
         })[char]);
     }
-
-    /* ==========================================
-       GET ACTIVITY DETAILS
-    ========================================== */
 
     function getDetails(record) {
         let details = record.details;
@@ -226,15 +288,86 @@ document.addEventListener("DOMContentLoaded", async () => {
             : {};
     }
 
+    function getToolName(record) {
+        return String(record.tool_name || "").toLowerCase();
+    }
+
     /* ==========================================
-       GET DISPLAY NAME
+       PERMANENT TOOL CLASSIFICATION
+
+       These tools NEVER expire automatically.
+       Users CAN manually delete their records.
+    ========================================== */
+
+    function isPermanentRecord(record) {
+        const name = getToolName(record);
+
+        return (
+            record.is_permanent === true ||
+            name.includes("qr") ||
+            name.includes("barcode") ||
+            name.includes("scanner")
+        );
+    }
+
+    /* ==========================================
+       TEMPORARY FILE VALIDATION
+    ========================================== */
+
+    function getTemporaryFile(record) {
+        if (isPermanentRecord(record)) {
+            return null;
+        }
+
+        if (record.storage_bucket !== TEMP_BUCKET) {
+            return null;
+        }
+
+        const path = record.storage_path;
+
+        if (
+            typeof path !== "string" ||
+            !path.trim() ||
+            path.startsWith("/") ||
+            path.includes("..") ||
+            !path.startsWith(`${currentUser.id}/`)
+        ) {
+            return null;
+        }
+
+        return {
+            bucket: TEMP_BUCKET,
+            path
+        };
+    }
+
+    function isExpired(record) {
+        if (isPermanentRecord(record)) {
+            return false;
+        }
+
+        if (String(record.status || "").toLowerCase() === "expired") {
+            return true;
+        }
+
+        if (!record.expires_at) {
+            return false;
+        }
+
+        const expiry = new Date(record.expires_at).getTime();
+
+        return !Number.isNaN(expiry) && expiry <= Date.now();
+    }
+
+    /* ==========================================
+       DISPLAY NAME
     ========================================== */
 
     function getDisplayName(record) {
-        const toolName = String(record.tool_name || "").toLowerCase();
+        const name = getToolName(record);
         const details = getDetails(record);
 
-        if (toolName.includes("qr")) {
+        if (name.includes("qr")) {
             return details.title || record.file_name || "";
         }
 
@@ -242,7 +375,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     /* ==========================================
-       TOOL ICON HELPER
+       TOOL ICON
     ========================================== */
 
     function getToolIcon(tool) {
@@ -261,13 +394,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     /* ==========================================
-       GET QR IMAGE PATH
+       QR IMAGE PATH
     ========================================== */
 
     function getQrImagePath(record) {
-        const toolName = String(record.tool_name || "").toLowerCase();
-
-        if (!toolName.includes("qr")) {
+        if (!getToolName(record).includes("qr")) {
             return null;
         }
 
@@ -278,12 +409,9 @@ document.addEventListener("DOMContentLoaded", async () => {
             typeof imagePath !== "string" ||
             !imagePath.trim() ||
             imagePath.startsWith("/") ||
-            imagePath.includes("..")
+            imagePath.includes("..") ||
+            !imagePath.startsWith(`${currentUser.id}/`)
         ) {
-            return null;
-        }
-
-        if (!imagePath.startsWith(`${currentUser.id}/`)) {
             return null;
         }
 
@@ -291,13 +419,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     /* ==========================================
-       GET BARCODE DETAILS
+       BARCODE DETAILS
     ========================================== */
 
-    function getBarcodeDetails(record) {
-        const toolName = String(record.tool_name || "").toLowerCase();
+    function isValidHex(value) {
+        return (
+            typeof value === "string" &&
+            /^#[0-9A-Fa-f]{6}$/.test(value)
+        );
+    }
 
-        if (!toolName.includes("barcode")) {
+    function getBarcodeDetails(record) {
+        if (!getToolName(record).includes("barcode")) {
             return null;
         }
 
@@ -326,7 +459,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         return {
-            value: value,
+            value,
             format: format.toUpperCase(),
             foreground: isValidHex(details.foreground_color)
                 ? details.foreground_color
@@ -337,19 +470,15 @@ document.addEventListener("DOMContentLoaded", async () => {
         };
     }
 
-    /* ==========================================
-       VALIDATE HEX COLOUR
-    ========================================== */
+    function getBarcodeFileName(record) {
+        const details = getDetails(record);
+        const format = details.format || "barcode";
 
-    function isValidHex(value) {
-        return (
-            typeof value === "string" &&
-            /^#[0-9A-Fa-f]{6}$/.test(value)
-        );
+        return `jscan-${String(format).toLowerCase()}-barcode.png`;
     }
 
     /* ==========================================
-       LOAD JSBARCODE LIBRARY IF NEEDED
+       LOAD JSBARCODE LIBRARY
     ========================================== */
 
     let barcodeLibraryPromise = null;
@@ -364,34 +493,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         barcodeLibraryPromise = new Promise((resolve, reject) => {
-
-            const existingScript = document.querySelector(
-                'script[data-jscan-jsbarcode="true"]'
-            );
-
-            if (existingScript) {
-                existingScript.addEventListener("load", () => {
-                    if (typeof window.JsBarcode === "function") {
-                        resolve();
-                    } else {
-                        reject(new Error("Barcode library did not initialize."));
-                    }
-                }, { once: true });
-
-                existingScript.addEventListener("error", () => {
-                    reject(new Error("Unable to load barcode library."));
-                }, { once: true });
-
-                return;
-            }
-
             const script = document.createElement("script");
 
             script.src =
                 "https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js";
 
             script.async = true;
-            script.dataset.jscanJsbarcode = "true";
 
             script.onload = () => {
                 if (typeof window.JsBarcode === "function") {
@@ -406,7 +513,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             };
 
             document.head.appendChild(script);
-
         }).catch(error => {
             barcodeLibraryPromise = null;
             throw error;
@@ -416,7 +522,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     /* ==========================================
-       CREATE BARCODE PNG BLOB
+       CREATE BARCODE PNG
     ========================================== */
 
     async function createBarcodePngBlob(record) {
@@ -482,16 +588,9 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
 
             context.fillStyle = details.background;
-
-            context.fillRect(
-                0,
-                0,
-                canvas.width,
-                canvas.height
-            );
+            context.fillRect(0, 0, canvas.width, canvas.height);
 
             context.scale(scale, scale);
-
             context.drawImage(image, 0, 0);
 
             const pngBlob = await new Promise(resolve => {
@@ -510,40 +609,73 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     /* ==========================================
-       CREATE SAFE BARCODE FILE NAME
+       SIGNED URL HELPERS
     ========================================== */
 
-    function getBarcodeFileName(record) {
-        const details = getDetails(record);
-        const format = details.format || "barcode";
-
-        return `jscan-${String(format).toLowerCase()}-barcode.png`;
-    }
-
-    /* ==========================================
-       CREATE QR IMAGE SIGNED URL
-    ========================================== */
-
-    async function getQrSignedUrl(imagePath) {
+    async function getSignedUrl(bucket, path) {
         const { data, error } = await db
             .storage
-            .from("qr-codes")
-            .createSignedUrl(imagePath, 300);
+            .from(bucket)
+            .createSignedUrl(path, 300);
 
         if (error) {
-            console.error("QR image URL error:", error);
             throw error;
         }
 
         if (!data?.signedUrl) {
-            throw new Error("Unable to retrieve the QR code image.");
+            throw new Error("Unable to retrieve the file.");
         }
 
         return data.signedUrl;
     }
 
+    async function getQrSignedUrl(imagePath) {
+        return getSignedUrl(QR_BUCKET, imagePath);
+    }
+
     /* ==========================================
-       CLOSE PREVIEW
+       DOWNLOAD HELPERS
+    ========================================== */
+
+    async function downloadFromUrl(url, fileName) {
+        const response = await fetch(url);
+
+        if (!response.ok) {
+            throw new Error("Unable to download the file.");
+        }
+
+        const blob = await response.blob();
+        const objectUrl = URL.createObjectURL(blob);
+
+        const link = document.createElement("a");
+
+        link.href = objectUrl;
+        link.download = fileName || "jscan-file";
+
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 1500);
+    }
+
+    function downloadBlob(blob, fileName) {
+        const objectUrl = URL.createObjectURL(blob);
+
+        const link = document.createElement("a");
+
+        link.href = objectUrl;
+        link.download = fileName || "jscan-file";
+
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 1500);
+    }
+
+    /* ==========================================
+       PREVIEW MODAL
     ========================================== */
 
     function closePreview() {
@@ -556,10 +688,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         qrPreviewLoading.hidden = false;
         qrPreviewLoading.textContent = "Loading preview...";
 
-        if (
-            currentPreviewUrl &&
-            currentPreviewUrl.startsWith("blob:")
-        ) {
+        if (currentPreviewUrl?.startsWith("blob:")) {
             URL.revokeObjectURL(currentPreviewUrl);
         }
 
@@ -573,10 +702,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             previousFocusElement = null;
         }
     }
-
-    /* ==========================================
-       OPEN PREVIEW MODAL
-    ========================================== */
 
     function openPreviewModal(button, title, fileName) {
         previousFocusElement = button;
@@ -601,8 +726,29 @@ document.addEventListener("DOMContentLoaded", async () => {
         document.body.style.overflow = "hidden";
     }
 
+    function showPreviewImage(url) {
+        currentPreviewUrl = url;
+
+        qrPreviewImage.onload = () => {
+            qrPreviewImage.hidden = false;
+            qrPreviewLoading.hidden = true;
+            qrPreviewDownload.disabled = false;
+        };
+
+        qrPreviewImage.onerror = () => {
+            qrPreviewImage.hidden = true;
+            qrPreviewLoading.hidden = false;
+            qrPreviewLoading.textContent =
+                "Unable to display this file preview.";
+
+            qrPreviewDownload.disabled = true;
+        };
+
+        qrPreviewImage.src = url;
+    }
+
     /* ==========================================
-       OPEN QR PREVIEW INSIDE SAME PAGE
+       VIEW QR CODE
     ========================================== */
 
     async function viewQrCode(imagePath, button, fileName) {
@@ -619,25 +765,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         try {
             const signedUrl = await getQrSignedUrl(imagePath);
-
-            currentPreviewUrl = signedUrl;
-
-            qrPreviewImage.onload = () => {
-                qrPreviewImage.hidden = false;
-                qrPreviewLoading.hidden = true;
-                qrPreviewDownload.disabled = false;
-            };
-
-            qrPreviewImage.onerror = () => {
-                qrPreviewImage.hidden = true;
-                qrPreviewLoading.hidden = false;
-                qrPreviewLoading.textContent =
-                    "Unable to display this QR code. Please try again.";
-
-                qrPreviewDownload.disabled = true;
-            };
-
-            qrPreviewImage.src = signedUrl;
+            showPreviewImage(signedUrl);
 
         } catch (error) {
             console.error("QR viewing error:", error);
@@ -645,8 +773,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             qrPreviewLoading.textContent =
                 "Unable to load this QR code. Please try again.";
 
-            qrPreviewDownload.disabled = true;
-
         } finally {
             button.disabled = false;
             button.textContent = "View";
@@ -654,46 +780,24 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     /* ==========================================
-       OPEN BARCODE PREVIEW
+       VIEW BARCODE
     ========================================== */
 
     async function viewBarcode(record, button) {
         if (button.disabled) return;
 
-        const fileName = getBarcodeFileName(record);
-
         openPreviewModal(
             button,
             "Barcode Preview",
-            fileName
+            getBarcodeFileName(record)
         );
 
         button.disabled = true;
         button.textContent = "Opening...";
 
         try {
-            const pngBlob = await createBarcodePngBlob(record);
-
-            const previewUrl = URL.createObjectURL(pngBlob);
-
-            currentPreviewUrl = previewUrl;
-
-            qrPreviewImage.onload = () => {
-                qrPreviewImage.hidden = false;
-                qrPreviewLoading.hidden = true;
-                qrPreviewDownload.disabled = false;
-            };
-
-            qrPreviewImage.onerror = () => {
-                qrPreviewImage.hidden = true;
-                qrPreviewLoading.hidden = false;
-                qrPreviewLoading.textContent =
-                    "Unable to display this barcode.";
-
-                qrPreviewDownload.disabled = true;
-            };
-
-            qrPreviewImage.src = previewUrl;
+            const blob = await createBarcodePngBlob(record);
+            showPreviewImage(URL.createObjectURL(blob));
 
         } catch (error) {
             console.error("Barcode viewing error:", error);
@@ -701,8 +805,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             qrPreviewLoading.textContent =
                 "Unable to recreate this barcode. Please try again.";
 
-            qrPreviewDownload.disabled = true;
-
         } finally {
             button.disabled = false;
             button.textContent = "View";
@@ -710,31 +812,46 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     /* ==========================================
-       DOWNLOAD FROM URL
+       VIEW TEMPORARY FILE
     ========================================== */
 
-    async function downloadFromUrl(url, fileName) {
-        const response = await fetch(url);
+    async function viewTemporaryFile(record, button) {
+        if (button.disabled || isExpired(record)) return;
 
-        if (!response.ok) {
-            throw new Error("Unable to download the image.");
+        const file = getTemporaryFile(record);
+
+        if (!file) {
+            alert("This file is not available to preview.");
+            return;
         }
 
-        const imageBlob = await response.blob();
-        const objectUrl = URL.createObjectURL(imageBlob);
+        button.disabled = true;
+        button.textContent = "Opening...";
 
-        const link = document.createElement("a");
+        try {
+            const signedUrl = await getSignedUrl(
+                file.bucket,
+                file.path
+            );
 
-        link.href = objectUrl;
-        link.download = fileName || "jscan-image.png";
+            const link = document.createElement("a");
 
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
+            link.href = signedUrl;
+            link.target = "_blank";
+            link.rel = "noopener noreferrer";
 
-        setTimeout(() => {
-            URL.revokeObjectURL(objectUrl);
-        }, 1500);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+
+        } catch (error) {
+            console.error("File viewing error:", error);
+            alert("Unable to open this file. Please try again.");
+
+        } finally {
+            button.disabled = false;
+            button.textContent = "View";
+        }
     }
 
     /* ==========================================
@@ -757,7 +874,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         } catch (error) {
             console.error("QR download error:", error);
-
             alert("Unable to download this QR code. Please try again.");
 
         } finally {
@@ -777,22 +893,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         button.textContent = "Downloading...";
 
         try {
-            const pngBlob = await createBarcodePngBlob(record);
+            const blob = await createBarcodePngBlob(record);
 
-            const objectUrl = URL.createObjectURL(pngBlob);
-
-            const link = document.createElement("a");
-
-            link.href = objectUrl;
-            link.download = getBarcodeFileName(record);
-
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-
-            setTimeout(() => {
-                URL.revokeObjectURL(objectUrl);
-            }, 1500);
+            downloadBlob(blob, getBarcodeFileName(record));
 
         } catch (error) {
             console.error("Barcode download error:", error);
@@ -800,6 +903,47 @@ document.addEventListener("DOMContentLoaded", async () => {
             alert(
                 "Unable to recreate or download this barcode. Please try again."
             );
+
+        } finally {
+            button.disabled = false;
+            button.textContent = "Download";
+        }
+    }
+
+    /* ==========================================
+       DOWNLOAD TEMPORARY FILE
+    ========================================== */
+
+    async function downloadTemporaryFile(record, button) {
+        if (button.disabled || isExpired(record)) return;
+
+        const file = getTemporaryFile(record);
+
+        if (!file) {
+            alert("This file is no longer available.");
+            return;
+        }
+
+        button.disabled = true;
+        button.textContent = "Downloading...";
+
+        try {
+            const signedUrl = await getSignedUrl(
+                file.bucket,
+                file.path
+            );
+
+            const fileName =
+                record.file_name ||
+                file.path.split("/").pop() ||
+                "jscan-file";
+
+            await downloadFromUrl(signedUrl, fileName);
+
+        } catch (error) {
+            console.error("Temporary file download error:", error);
+
+            alert("Unable to download this file. Please try again.");
 
         } finally {
             button.disabled = false;
@@ -834,10 +978,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     });
 
-    /* ==========================================
-       PREVIEW CLOSE BUTTONS
-    ========================================== */
-
     closeQrPreview.addEventListener("click", closePreview);
     closeQrPreviewBtn.addEventListener("click", closePreview);
 
@@ -857,7 +997,122 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
     /* ==========================================
-       PAGINATION PAGE NUMBERS
+       DELETE ASSOCIATED STORAGE FILE
+    ========================================== */
+
+    async function deleteStorageForRecord(record) {
+        const name = getToolName(record);
+
+        let bucket = null;
+        let path = null;
+
+        const temporaryFile = getTemporaryFile(record);
+
+        if (temporaryFile) {
+            bucket = temporaryFile.bucket;
+            path = temporaryFile.path;
+        }
+
+        // QR files are stored separately from temporary files.
+        if (name.includes("qr")) {
+            const qrPath = getQrImagePath(record);
+
+            if (qrPath) {
+                bucket = QR_BUCKET;
+                path = qrPath;
+            }
+        }
+
+        // Barcode images are recreated from saved details.
+        // Scanner results are stored as activity data.
+        if (!bucket || !path) {
+            return true;
+        }
+
+        const { error } = await db.storage
+            .from(bucket)
+            .remove([path]);
+
+        if (error) {
+            console.error("Storage deletion error:", error);
+            throw new Error(
+                "The associated file could not be deleted. Your History record has been kept."
+            );
+        }
+
+        return true;
+    }
+
+    /* ==========================================
+       DELETE SINGLE HISTORY RECORD
+
+       Works for ALL 13 tools.
+       Storage is deleted before the History row.
+    ========================================== */
+
+    async function deleteHistory(id) {
+        if (isDeleting) return false;
+
+        const record = currentPageRecords.find(
+            item => String(item.id) === String(id)
+        );
+
+        if (!record) {
+            alert("This activity could not be found. Please refresh.");
+            return false;
+        }
+
+        isDeleting = true;
+
+        try {
+            await deleteStorageForRecord(record);
+
+            const { data, error } = await db
+                .from("activity_history")
+                .delete()
+                .eq("id", id)
+                .eq("user_id", currentUser.id)
+                .select("id");
+
+            if (error) {
+                console.error("History deletion error:", error);
+
+                alert(
+                    "The file was handled, but the History record could not be deleted. Please try again."
+                );
+
+                return false;
+            }
+
+            if (!data || data.length === 0) {
+                alert(
+                    "The activity was not deleted. Please check your database permissions."
+                );
+
+                return false;
+            }
+
+            await loadHistory();
+
+            return true;
+
+        } catch (error) {
+            console.error("Activity deletion error:", error);
+
+            alert(
+                error.message ||
+                "Unable to delete this activity. Please try again."
+            );
+
+            return false;
+
+        } finally {
+            isDeleting = false;
+        }
+    }
+
+    /* ==========================================
+       PAGINATION
     ========================================== */
 
     function getPageNumbers() {
@@ -877,10 +1132,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         return [...pages].sort((a, b) => a - b);
     }
 
-    /* ==========================================
-       RENDER PAGINATION
-    ========================================== */
-
     function renderPagination() {
         if (totalRecords === 0) {
             paginationContainer.innerHTML = "";
@@ -891,6 +1142,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         paginationContainer.hidden = false;
 
         const firstRecord = ((currentPage - 1) * PAGE_SIZE) + 1;
+
         const lastRecord = Math.min(
             currentPage * PAGE_SIZE,
             totalRecords
@@ -955,10 +1207,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         `;
     }
 
-    /* ==========================================
-       PAGINATION BUTTON EVENTS
-    ========================================== */
-
     paginationContainer.addEventListener("click", async event => {
         const button = event.target.closest("[data-page]");
 
@@ -984,7 +1232,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         currentPage = requestedPage;
-
         await loadHistory();
     });
 
@@ -1014,16 +1261,52 @@ document.addEventListener("DOMContentLoaded", async () => {
         clearHistoryBtn.hidden = false;
 
         historyList.innerHTML = records.map(record => {
+            const permanent = isPermanentRecord(record);
+            const expired = isExpired(record);
+
             const imagePath = getQrImagePath(record);
             const barcodeDetails = getBarcodeDetails(record);
+            const temporaryFile = getTemporaryFile(record);
+
             const displayName = getDisplayName(record);
 
             const downloadFileName = displayName
                 ? `${displayName.replace(/[\\/:*?"<>|]/g, "_")}.png`
                 : "jscan-qr-code.png";
 
+            const statusText = permanent
+                ? "Permanent history"
+                : expired
+                    ? "Expired"
+                    : (record.status || "Completed");
+
+            const statusClass = permanent
+                ? "history-permanent"
+                : expired
+                    ? "history-expired"
+                    : "";
+
+            const scannerDetails = getDetails(record);
+
+            const scannerResult = getToolName(record).includes("scanner")
+                ? (
+                    scannerDetails.scanned_text ||
+                    scannerDetails.scan_result ||
+                    scannerDetails.result ||
+                    scannerDetails.value ||
+                    ""
+                )
+                : "";
+
+            const canViewQr = Boolean(imagePath);
+            const canViewBarcode = Boolean(barcodeDetails);
+
+            const canViewTemporary =
+                Boolean(temporaryFile) && !expired;
+
             return `
-                <article class="panel history-item"
+                <article
+                    class="panel history-item"
                     data-history-id="${escapeHTML(record.id)}">
 
                     <div class="history-item-icon">
@@ -1041,18 +1324,30 @@ document.addEventListener("DOMContentLoaded", async () => {
                             </p>
                         ` : ""}
 
+                        ${scannerResult ? `
+                            <span class="history-result">
+                                ${escapeHTML(scannerResult)}
+                            </span>
+                        ` : ""}
+
                         <small>
                             ${escapeHTML(formatDate(record.created_at))}
                         </small>
+
+                        ${!permanent && record.expires_at && !expired ? `
+                            <span class="history-expiry">
+                                File expires: ${escapeHTML(formatDate(record.expires_at))}
+                            </span>
+                        ` : ""}
                     </div>
 
                     <div class="history-item-actions">
 
-                        <span class="history-status">
-                            ${escapeHTML(record.status || "")}
+                        <span class="history-status ${statusClass}">
+                            ${escapeHTML(statusText)}
                         </span>
 
-                        ${imagePath ? `
+                        ${canViewQr ? `
                             <button
                                 type="button"
                                 class="btn btn-ghost view-qr-btn"
@@ -1070,7 +1365,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                             </button>
                         ` : ""}
 
-                        ${barcodeDetails ? `
+                        ${canViewBarcode ? `
                             <button
                                 type="button"
                                 class="btn btn-ghost view-barcode-btn"
@@ -1081,6 +1376,22 @@ document.addEventListener("DOMContentLoaded", async () => {
                             <button
                                 type="button"
                                 class="btn btn-ghost download-barcode-btn"
+                                data-id="${escapeHTML(record.id)}">
+                                Download
+                            </button>
+                        ` : ""}
+
+                        ${canViewTemporary ? `
+                            <button
+                                type="button"
+                                class="btn btn-ghost view-temporary-btn"
+                                data-id="${escapeHTML(record.id)}">
+                                View
+                            </button>
+
+                            <button
+                                type="button"
+                                class="btn btn-ghost download-temporary-btn"
                                 data-id="${escapeHTML(record.id)}">
                                 Download
                             </button>
@@ -1100,13 +1411,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     /* ==========================================
-       LOAD USER HISTORY - SERVER PAGINATION
+       LOAD HISTORY
     ========================================== */
 
     async function loadHistory() {
         if (isLoading) return false;
 
         isLoading = true;
+
         showMessage("Loading your activity history...");
 
         try {
@@ -1167,99 +1479,51 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     /* ==========================================
-       DELETE SINGLE HISTORY RECORD
-    ========================================== */
-
-    async function deleteHistory(id) {
-        if (isDeleting) return;
-
-        isDeleting = true;
-
-        try {
-            const { data, error } = await db
-                .from("activity_history")
-                .delete()
-                .eq("id", id)
-                .eq("user_id", currentUser.id)
-                .select("id");
-
-            if (error) {
-                console.error("History deletion error:", error);
-
-                alert("Unable to delete this activity. Please try again.");
-                return;
-            }
-
-            if (!data || data.length === 0) {
-                alert(
-                    "The activity was not deleted from the database. Please check your database permissions."
-                );
-
-                await loadHistory();
-                return;
-            }
-
-            await loadHistory();
-
-        } catch (error) {
-            console.error("Unexpected history deletion error:", error);
-
-            alert("Something went wrong. Please try again.");
-
-        } finally {
-            isDeleting = false;
-        }
-    }
-
-    /* ==========================================
        HISTORY ACTION BUTTONS
     ========================================== */
 
     historyList.addEventListener("click", async event => {
-
         const viewQrButton = event.target.closest(".view-qr-btn");
         const downloadQrButton = event.target.closest(".download-qr-btn");
 
         const viewBarcodeButton = event.target.closest(".view-barcode-btn");
-        const downloadBarcodeButton = event.target.closest(".download-barcode-btn");
+        const downloadBarcodeButton =
+            event.target.closest(".download-barcode-btn");
 
-        const deleteButton = event.target.closest(".delete-history-btn");
+        const viewTemporaryButton =
+            event.target.closest(".view-temporary-btn");
+
+        const downloadTemporaryButton =
+            event.target.closest(".download-temporary-btn");
+
+        const deleteButton =
+            event.target.closest(".delete-history-btn");
+
+        if (isDeleting || isClearing || isLoading) return;
 
         if (viewQrButton) {
-            if (isDeleting || isClearing || isLoading) return;
-
-            const imagePath = viewQrButton.dataset.imagePath;
-            const fileName = viewQrButton.dataset.fileName;
-
-            if (imagePath) {
-                await viewQrCode(imagePath, viewQrButton, fileName);
-            }
+            await viewQrCode(
+                viewQrButton.dataset.imagePath,
+                viewQrButton,
+                viewQrButton.dataset.fileName
+            );
 
             return;
         }
 
         if (downloadQrButton) {
-            if (isDeleting || isClearing || isLoading) return;
-
-            const imagePath = downloadQrButton.dataset.imagePath;
-            const fileName = downloadQrButton.dataset.fileName;
-
-            if (imagePath) {
-                await downloadQrCode(
-                    imagePath,
-                    downloadQrButton,
-                    fileName
-                );
-            }
+            await downloadQrCode(
+                downloadQrButton.dataset.imagePath,
+                downloadQrButton,
+                downloadQrButton.dataset.fileName
+            );
 
             return;
         }
 
         if (viewBarcodeButton) {
-            if (isDeleting || isClearing || isLoading) return;
-
             const record = currentPageRecords.find(
-                item => item.id === viewBarcodeButton.dataset.id
+                item => String(item.id) === viewBarcodeButton.dataset.id
             );
 
             if (record) {
@@ -1270,10 +1534,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         if (downloadBarcodeButton) {
-            if (isDeleting || isClearing || isLoading) return;
-
             const record = currentPageRecords.find(
-                item => item.id === downloadBarcodeButton.dataset.id
+                item => String(item.id) === downloadBarcodeButton.dataset.id
             );
 
             if (record) {
@@ -1283,15 +1545,48 @@ document.addEventListener("DOMContentLoaded", async () => {
             return;
         }
 
-        if (!deleteButton || isDeleting || isClearing || isLoading) {
+        if (viewTemporaryButton) {
+            const record = currentPageRecords.find(
+                item => String(item.id) === viewTemporaryButton.dataset.id
+            );
+
+            if (record) {
+                await viewTemporaryFile(record, viewTemporaryButton);
+            }
+
             return;
         }
+
+        if (downloadTemporaryButton) {
+            const record = currentPageRecords.find(
+                item => String(item.id) === downloadTemporaryButton.dataset.id
+            );
+
+            if (record) {
+                await downloadTemporaryFile(
+                    record,
+                    downloadTemporaryButton
+                );
+            }
+
+            return;
+        }
+
+        if (!deleteButton) return;
 
         const id = deleteButton.dataset.id;
 
         if (!id) return;
 
-        if (!confirm("Delete this activity from your history?")) {
+        const record = currentPageRecords.find(
+            item => String(item.id) === String(id)
+        );
+
+        const name = record?.tool_name || "this activity";
+
+        if (!confirm(
+            `Delete "${name}" from your History? Any associated stored file will also be deleted.`
+        )) {
             return;
         }
 
@@ -1302,53 +1597,130 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
     /* ==========================================
-       CLEAR ALL HISTORY
+       CLEAR TEMPORARY HISTORY ONLY
+
+       Permanent QR, barcode and scanner records
+       are preserved by this button.
+
+       Individual Delete buttons work for ALL tools.
     ========================================== */
+
+    async function getAllTemporaryRecords() {
+        const allRecords = [];
+        const batchSize = 500;
+
+        let offset = 0;
+
+        while (true) {
+            const { data, error } = await db
+                .from("activity_history")
+                .select("*")
+                .eq("user_id", currentUser.id)
+                .order("created_at", { ascending: false })
+                .range(offset, offset + batchSize - 1);
+
+            if (error) {
+                throw error;
+            }
+
+            const batch = data || [];
+
+            allRecords.push(...batch);
+
+            if (batch.length < batchSize) {
+                break;
+            }
+
+            offset += batchSize;
+        }
+
+        return allRecords.filter(record => !isPermanentRecord(record));
+    }
+
+    async function clearTemporaryHistory() {
+        const records = await getAllTemporaryRecords();
+
+        let deletedCount = 0;
+        let failedCount = 0;
+
+        for (const record of records) {
+            try {
+                await deleteStorageForRecord(record);
+
+                const { data, error } = await db
+                    .from("activity_history")
+                    .delete()
+                    .eq("id", record.id)
+                    .eq("user_id", currentUser.id)
+                    .select("id");
+
+                if (error || !data?.length) {
+                    failedCount++;
+                    console.error(
+                        "Could not delete temporary History record:",
+                        error
+                    );
+                } else {
+                    deletedCount++;
+                }
+
+            } catch (error) {
+                failedCount++;
+
+                console.error(
+                    "Could not clear temporary activity:",
+                    record.id,
+                    error
+                );
+            }
+        }
+
+        return { deletedCount, failedCount };
+    }
 
     clearHistoryBtn.addEventListener("click", async () => {
         if (isClearing || isDeleting || isLoading) return;
 
         if (!confirm(
-            "Are you sure you want to clear your entire activity history?"
+            "Clear all temporary-tool activities from your History? QR Code Generator, Barcode Generator and QR & Barcode Scanner records will be kept. Associated temporary files will also be deleted."
         )) {
             return;
         }
 
         isClearing = true;
+
         clearHistoryBtn.disabled = true;
         clearHistoryBtn.textContent = "Clearing...";
 
         try {
-            const { data, error } = await db
-                .from("activity_history")
-                .delete()
-                .eq("user_id", currentUser.id)
-                .select("id");
-
-            if (error) {
-                console.error("Clear history error:", error);
-
-                alert("Unable to clear your history.");
-                return;
-            }
-
-            if (!data || data.length === 0) {
-                alert(
-                    "No activity records were deleted. Please check your database permissions."
-                );
-            }
+            const result = await clearTemporaryHistory();
 
             currentPage = 1;
 
             await loadHistory();
 
-        } catch (error) {
-            console.error("Unexpected clear history error:", error);
+            if (result.failedCount > 0) {
+                alert(
+                    `${result.deletedCount} activities deleted. ${result.failedCount} could not be deleted. Please try again for those activities.`
+                );
+            } else if (result.deletedCount === 0) {
+                alert("There are no temporary activities to clear.");
+            } else {
+                alert(
+                    `${result.deletedCount} temporary activities deleted successfully. Your permanent-tool History records were preserved.`
+                );
+            }
 
-            alert("Something went wrong. Please try again.");
+        } catch (error) {
+            console.error("Clear history error:", error);
+
+            alert(
+                "Unable to clear temporary History. Please try again."
+            );
 
         } finally {
             isClearing = false;
+
             clearHistoryBtn.disabled = false;
             clearHistoryBtn.textContent = "Clear history";
         }
