@@ -95,22 +95,55 @@
             const db = window.jscanDB;
 
             if (!db) {
-                console.warn('JScan: Activity logging unavailable. Supabase not connected.');
-                return;
+                throw new Error('Supabase is not connected.');
             }
 
             const { data, error: sessionError } =
                 await db.auth.getSession();
 
-            if (sessionError) {
-                console.error('Activity session error:', sessionError);
-                return;
-            }
+            if (sessionError) throw sessionError;
 
             const user = data.session?.user;
 
             // Do not record guest activities.
-            if (!user) return;
+            if (!user) {
+                return {
+                    success: false,
+                    skipped: true
+                };
+            }
+
+            // ----------------------------------
+            // PREVENT DUPLICATE SAVED QR ENTRIES
+            // ----------------------------------
+
+            if (
+                action === 'QR code saved to account' &&
+                details.image_path
+            ) {
+                const { data: existing, error: lookupError } =
+                    await db
+                        .from('activity_history')
+                        .select('id')
+                        .eq('user_id', user.id)
+                        .eq('tool_name', 'QR Code Generator')
+                        .eq('action', action)
+                        .eq('details->>image_path', details.image_path)
+                        .limit(1);
+
+                if (lookupError) throw lookupError;
+
+                if (existing && existing.length > 0) {
+                    return {
+                        success: true,
+                        duplicate: true
+                    };
+                }
+            }
+
+            // ----------------------------------
+            // INSERT ACTIVITY
+            // ----------------------------------
 
             const { error } = await db
                 .from('activity_history')
@@ -123,13 +156,19 @@
                     details: details
                 }]);
 
-            if (error) {
-                console.error('Activity logging error:', error);
-            }
+            if (error) throw error;
+
+            return {
+                success: true
+            };
 
         } catch (error) {
-            // Activity logging must never interrupt the QR tool.
-            console.error('Unexpected activity logging error:', error);
+            console.error('Activity logging error:', error);
+
+            return {
+                success: false,
+                error: error.message || 'Activity logging failed.'
+            };
         }
     }
 
@@ -652,6 +691,7 @@
             showSaveMessage('Saving your QR code...', 'info');
 
             let uploadedImagePath = null;
+            let qrSavedToDatabase = false;
 
             try {
 
@@ -740,11 +780,16 @@
 
                 if (saveError) throw saveError;
 
+                // QR record is now safely saved.
+                qrSavedToDatabase = true;
+
                 // ----------------------------------
                 // G. RECORD ACTIVITY
                 // ----------------------------------
 
-                await logActivity(
+                showSaveMessage('Recording activity...', 'info');
+
+                const activityResult = await logActivity(
                     'QR code saved to account',
                     fileName,
                     {
@@ -757,23 +802,31 @@
                 );
 
                 // ----------------------------------
-                // H. SUCCESS
+                // H. SUCCESS OR ACTIVITY WARNING
                 // ----------------------------------
 
-                showSaveMessage(
-                    '✓ QR code and image saved successfully to your JScan account!',
-                    'success'
-                );
+                if (activityResult.success) {
+                    showSaveMessage(
+                        '✓ QR code and image saved successfully to your JScan account!',
+                        'success'
+                    );
+                } else {
+                    showSaveMessage(
+                        'Your QR code was saved successfully, but Activity History could not be updated. Your QR code is safe.',
+                        'info'
+                    );
+                }
 
             } catch (error) {
 
                 console.error('QR save error:', error);
 
                 // ----------------------------------
-                // I. CLEAN UP IMAGE IF DATABASE SAVE FAILED
+                // I. CLEAN UP ONLY IF QR DATABASE
+                // SAVE DID NOT SUCCEED
                 // ----------------------------------
 
-                if (uploadedImagePath) {
+                if (uploadedImagePath && !qrSavedToDatabase) {
                     const { error: removeError } =
                         await window.jscanDB
                             .storage
