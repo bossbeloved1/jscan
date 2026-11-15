@@ -1,5 +1,16 @@
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', initializeBarcodeScanner, { once: true });
+
+if (document.readyState !== 'loading') {
+    initializeBarcodeScanner();
+}
+
+async function initializeBarcodeScanner() {
+    "use strict";
+
+    // Prevent initialization twice.
+    if (window.jscanBarcodeScannerInitialized) return;
+    window.jscanBarcodeScannerInitialized = true;
 
     const startBtn = document.getElementById('startScannerBtn');
     const stopBtn = document.getElementById('stopScannerBtn');
@@ -17,9 +28,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const copyBtn = document.getElementById('copyResultBtn');
     const openBtn = document.getElementById('openResultBtn');
 
-    const db = window.jscanDB;
-
-    if (!startBtn || !stopBtn || !reader) return;
+    if (!startBtn || !stopBtn || !reader) {
+        console.error('Barcode scanner: Required HTML elements are missing.');
+        return;
+    }
 
     let scanner = null;
     let cameraRunning = false;
@@ -46,16 +58,45 @@ document.addEventListener('DOMContentLoaded', () => {
         message.style.color = error ? '#dc2626' : 'var(--muted)';
     }
 
+    // ==========================================
+    // WAIT FOR SUPABASE DATABASE CLIENT
+    // ==========================================
+
+    async function waitForDatabase(maxWait = 10000) {
+        const startTime = Date.now();
+
+        while (Date.now() - startTime < maxWait) {
+            if (
+                window.jscanDB &&
+                typeof window.jscanDB.from === 'function' &&
+                window.jscanDB.auth
+            ) {
+                return window.jscanDB;
+            }
+
+            await new Promise(resolve => setTimeout(resolve, 200));
+        }
+
+        return null;
+    }
+
+    // ==========================================
+    // RESET RESULT
+    // ==========================================
+
     function resetResult() {
+        if (resultBox) resultBox.hidden = true;
+        if (resultText) resultText.textContent = '';
 
-        resultBox.hidden = true;
-        resultText.textContent = '';
+        if (openBtn) {
+            openBtn.hidden = true;
+            openBtn.removeAttribute('href');
+        }
 
-        openBtn.hidden = true;
-        openBtn.removeAttribute('href');
-
-        preview.hidden = true;
-        preview.removeAttribute('src');
+        if (preview) {
+            preview.hidden = true;
+            preview.removeAttribute('src');
+        }
 
         if (imagePreviewUrl) {
             URL.revokeObjectURL(imagePreviewUrl);
@@ -71,20 +112,31 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
 
     async function saveScanToHistory(value, source) {
-
         if (!value || historySaveAttempted) return;
 
         historySaveAttempted = true;
 
-        if (!db) {
-            console.error('JScan database client is unavailable.');
-            showMessage('Scan successful, but History could not be reached.', true);
-            return;
-        }
-
         try {
+            showMessage('Scan successful. Connecting to History...');
 
-            showMessage('Scan successful. Saving to History...');
+            // Get the latest database client instead of
+            // relying on a possibly outdated variable.
+            const db = await waitForDatabase();
+
+            if (!db) {
+                console.error(
+                    'JScan database client was not available after waiting.'
+                );
+
+                showMessage(
+                    'Barcode scanned, but History connection failed. Please refresh the page and try again.',
+                    true
+                );
+
+                return;
+            }
+
+            showMessage('Database connected. Saving barcode to History...');
 
             const { data: userData, error: userError } =
                 await db.auth.getUser();
@@ -120,15 +172,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             showMessage('Barcode scanned and added to History!');
 
-        } catch (error) {
+            console.log('Barcode scan successfully saved to History.');
 
+        } catch (error) {
             console.error('Barcode History Error:', error);
 
             showMessage(
                 'Barcode scanned, but could not be added to History.',
                 true
             );
-
         }
     }
 
@@ -137,34 +189,34 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
 
     function displayResult(value, source = 'camera') {
-
         if (!value) return;
 
         lastResult = value;
 
-        resultText.textContent = value;
-        resultBox.hidden = false;
+        if (resultText) resultText.textContent = value;
+        if (resultBox) resultBox.hidden = false;
 
-        try {
+        if (openBtn) {
+            try {
+                const url = new URL(value);
 
-            const url = new URL(value);
-
-            if (
-                url.protocol === 'https:' ||
-                url.protocol === 'http:'
-            ) {
-                openBtn.href = url.href;
-                openBtn.hidden = false;
-            } else {
+                if (
+                    url.protocol === 'https:' ||
+                    url.protocol === 'http:'
+                ) {
+                    openBtn.href = url.href;
+                    openBtn.target = '_blank';
+                    openBtn.rel = 'noopener noreferrer';
+                    openBtn.hidden = false;
+                } else {
+                    openBtn.hidden = true;
+                }
+            } catch {
                 openBtn.hidden = true;
             }
-
-        } catch {
-            openBtn.hidden = true;
         }
 
         saveScanToHistory(value, source);
-
     }
 
     // ==========================================
@@ -172,20 +224,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
 
     async function stopCamera(silent = false) {
-
         if (scanner && cameraRunning) {
-
             try {
-
                 await scanner.stop();
                 await scanner.clear();
-
             } catch (error) {
-
                 console.warn('Camera stop:', error);
-
             }
-
         }
 
         cameraRunning = false;
@@ -205,14 +250,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
 
     async function startCamera() {
-
         if (typeof Html5Qrcode === 'undefined') {
-
             showMessage(
                 'Scanner library could not load. Check your internet connection.',
                 true
             );
-
             return;
         }
 
@@ -226,7 +268,6 @@ document.addEventListener('DOMContentLoaded', () => {
         showMessage('Requesting camera permission...');
 
         try {
-
             scanner = new Html5Qrcode('reader', {
                 formatsToSupport: barcodeFormats,
                 verbose: false
@@ -242,15 +283,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 },
                 (decodedText) => {
-
                     if (cameraRunning && !historySaveAttempted) {
-
                         displayResult(decodedText, 'camera');
-
                         stopCamera(true);
-
                     }
-
                 },
                 () => {}
             );
@@ -264,7 +300,6 @@ document.addEventListener('DOMContentLoaded', () => {
             showMessage('Camera is active. Point it at a barcode.');
 
         } catch (error) {
-
             console.error('Camera error:', error);
 
             cameraRunning = false;
@@ -278,7 +313,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 'Camera access failed. Check camera permission and ensure the website uses HTTPS.',
                 true
             );
-
         }
     }
 
@@ -295,26 +329,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
 
     if (imageInput) {
-
         imageInput.addEventListener('change', async () => {
-
             const file = imageInput.files[0];
 
             if (!file) return;
 
             if (!file.type.startsWith('image/')) {
-
                 showMessage('Please select a valid image file.', true);
                 imageInput.value = '';
-
                 return;
             }
 
             if (file.size > 15 * 1024 * 1024) {
-
                 showMessage('Image is too large. Maximum size is 15MB.', true);
                 imageInput.value = '';
-
                 return;
             }
 
@@ -323,7 +351,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (typeof Html5Qrcode === 'undefined') {
-
                 showMessage('Scanner library could not load.', true);
                 return;
             }
@@ -336,8 +363,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             imagePreviewUrl = URL.createObjectURL(file);
 
-            preview.src = imagePreviewUrl;
-            preview.hidden = false;
+            if (preview) {
+                preview.src = imagePreviewUrl;
+                preview.hidden = false;
+            }
 
             reader.hidden = false;
 
@@ -346,7 +375,6 @@ document.addEventListener('DOMContentLoaded', () => {
             let imageScanner = null;
 
             try {
-
                 imageScanner = new Html5Qrcode('reader', {
                     formatsToSupport: barcodeFormats,
                     verbose: false
@@ -357,7 +385,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 displayResult(decodedText, 'uploaded_image');
 
             } catch (error) {
-
                 console.error('Image scan error:', error);
 
                 showMessage(
@@ -366,23 +393,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 );
 
             } finally {
-
                 if (imageScanner) {
-
                     try {
                         await imageScanner.clear();
                     } catch (error) {
                         console.warn('Image scanner cleanup:', error);
                     }
-
                 }
 
                 reader.hidden = true;
-
             }
-
         });
-
     }
 
     // ==========================================
@@ -390,28 +411,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
 
     if (copyBtn) {
-
         copyBtn.addEventListener('click', async () => {
-
             if (!lastResult) return;
 
             try {
-
                 await navigator.clipboard.writeText(lastResult);
-
                 showMessage('Result copied successfully!');
 
             } catch (error) {
-
                 showMessage(
                     'Unable to copy. Please select and copy the result.',
                     true
                 );
-
             }
-
         });
-
     }
 
     // ==========================================
@@ -421,6 +434,8 @@ document.addEventListener('DOMContentLoaded', () => {
     reader.hidden = true;
     stopBtn.hidden = true;
     startBtn.hidden = false;
-    resultBox.hidden = true;
 
-});
+    if (resultBox) resultBox.hidden = true;
+
+    console.log('JScan Barcode Scanner initialized successfully.');
+}
