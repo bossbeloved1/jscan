@@ -30,10 +30,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const swatches = document.getElementById('swatches');
     const contrastNote = document.getElementById('contrastNote');
 
-    const db = window.jscanDB;
-
     let barcodeGenerated = false;
     let updateTimeout;
+
 
     /* ==========================================
        SUPABASE ACTIVITY LOGGER
@@ -41,17 +40,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function logActivity(action, fileName, details = {}) {
 
+        // Retrieve Supabase when logging is needed.
+        const db = window.jscanDB;
+
         if (!db) {
-            console.warn('JScan: Supabase is unavailable. Activity not recorded.');
+            console.warn(
+                'JScan: Supabase is unavailable. Activity not recorded.'
+            );
             return;
         }
 
         try {
 
-            const { data: { user }, error: userError } =
-                await db.auth.getUser();
+            const {
+                data: { user },
+                error: userError
+            } = await db.auth.getUser();
 
-            if (userError || !user) {
+            if (userError) {
+                console.error(
+                    'Unable to retrieve authenticated user:',
+                    userError
+                );
+                return;
+            }
+
+            if (!user) {
+                console.warn(
+                    'JScan: No authenticated user. Activity not recorded.'
+                );
                 return;
             }
 
@@ -67,12 +84,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
             if (error) {
-                console.error('Barcode activity logging error:', error);
+                console.error(
+                    'Barcode activity logging error:',
+                    error
+                );
+            } else {
+                console.log(
+                    'JScan: Barcode activity recorded successfully.'
+                );
             }
 
         } catch (error) {
 
-            console.error('Unexpected barcode activity error:', error);
+            console.error(
+                'Unexpected barcode activity error:',
+                error
+            );
 
         }
 
@@ -254,7 +281,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (typeof JsBarcode === 'undefined') {
 
-            showMessage('Barcode library could not load. Refresh the page.', true);
+            showMessage(
+                'Barcode library could not load. Refresh the page.',
+                true
+            );
 
             return false;
 
@@ -300,7 +330,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             showMessage('Barcode generated successfully!');
 
-            /* Record only deliberate generation, not live updates */
+
+            // Record deliberate generation only.
+            // Automatic colour updates are not logged.
 
             if (shouldLog) {
 
@@ -508,7 +540,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!barcodeGenerated) {
 
-            showMessage('Generate a barcode before downloading.', true);
+            showMessage(
+                'Generate a barcode before downloading.',
+                true
+            );
 
             return;
 
@@ -556,7 +591,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!barcodeGenerated) {
 
-            showMessage('Generate a barcode before downloading.', true);
+            showMessage(
+                'Generate a barcode before downloading.',
+                true
+            );
 
             return;
 
@@ -575,6 +613,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const url = URL.createObjectURL(svgBlob);
 
             const image = new Image();
+
 
             image.onload = () => {
 
@@ -602,11 +641,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 URL.revokeObjectURL(url);
 
+
                 canvas.toBlob(blob => {
 
                     if (!blob) {
 
-                        showMessage('Unable to create PNG image.', true);
+                        showMessage(
+                            'Unable to create PNG image.',
+                            true
+                        );
 
                         return;
 
@@ -634,7 +677,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 URL.revokeObjectURL(url);
 
-                showMessage('Unable to convert barcode to PNG.', true);
+                showMessage(
+                    'Unable to convert barcode to PNG.',
+                    true
+                );
 
             };
 
@@ -645,7 +691,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             console.error(error);
 
-            showMessage('Unable to download PNG barcode.', true);
+            showMessage(
+                'Unable to download PNG barcode.',
+                true
+            );
 
         }
 
