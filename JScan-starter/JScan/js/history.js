@@ -34,6 +34,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     let previousFocusElement = null;
 
     let currentPageRecords = [];
+    let currentScannerText = "";
 
     const PAGE_SIZE = 10;
 
@@ -73,6 +74,23 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     /* ==========================================
+       CREATE SCANNER COPY BUTTON
+    ========================================== */
+
+    const scannerCopyButton = document.createElement("button");
+
+    scannerCopyButton.type = "button";
+    scannerCopyButton.id = "scannerHistoryCopyButton";
+    scannerCopyButton.className = qrPreviewDownload.className;
+    scannerCopyButton.textContent = "Copy";
+    scannerCopyButton.hidden = true;
+
+    qrPreviewDownload.insertAdjacentElement(
+        "beforebegin",
+        scannerCopyButton
+    );
+
+    /* ==========================================
        CREATE TEMPORARY FILE NOTICE
     ========================================== */
 
@@ -95,6 +113,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     `;
 
     historyList.parentNode.insertBefore(temporaryNotice, historyList);
+
+    /* ==========================================
+       DYNAMIC STYLES
+    ========================================== */
 
     const style = document.createElement("style");
 
@@ -144,13 +166,22 @@ document.addEventListener("DOMContentLoaded", async () => {
             margin-top: 8px;
             overflow-wrap: anywhere;
             font-size: 13px;
-            color: var(--text-secondary, #777);
+            color: var(--text-color, #333);
+        }
+
+        .history-result a,
+        .scanner-history-link {
+            color: var(--history-link-color, #60a5fa);
+            text-decoration: underline;
+            overflow-wrap: anywhere;
         }
 
         .history-item-actions {
-            display: flex;
+            display: flex !important;
+            flex-direction: row !important;
             flex-wrap: wrap;
             align-items: center;
+            justify-content: flex-start;
             gap: 7px;
         }
 
@@ -211,6 +242,37 @@ document.addEventListener("DOMContentLoaded", async () => {
         .history-page-ellipsis {
             padding: 0 3px;
             color: var(--text-secondary, #777);
+        }
+
+        #scannerHistoryPreviewText {
+            width: 100%;
+            max-height: 65vh;
+            overflow: auto;
+            padding: 20px;
+            border: 1px solid var(--border-color, #ddd);
+            border-radius: 10px;
+            background: var(--card-bg, transparent);
+            color: var(--text-color, #222);
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        #scannerHistoryCopyButton {
+            margin-right: 6px;
+        }
+
+        @media (max-width: 600px) {
+            .history-item-actions {
+                width: 100%;
+                flex-direction: row !important;
+                flex-wrap: wrap;
+                justify-content: flex-start;
+                align-items: center;
+                padding-left: 64px;
+                gap: 7px;
+            }
         }
 
         @media (max-width: 480px) {
@@ -302,6 +364,42 @@ document.addEventListener("DOMContentLoaded", async () => {
             details.value ||
             ""
         );
+    }
+
+    function getSafeHttpUrl(value) {
+        try {
+            const url = new URL(String(value).trim());
+
+            if (
+                url.protocol === "http:" ||
+                url.protocol === "https:"
+            ) {
+                return url.href;
+            }
+
+        } catch (error) {
+            return null;
+        }
+
+        return null;
+    }
+
+    function createScannerResultHTML(value) {
+        const url = getSafeHttpUrl(value);
+
+        if (url) {
+            return `
+                <a
+                    class="scanner-history-link"
+                    href="${escapeHTML(url)}"
+                    target="_blank"
+                    rel="noopener noreferrer">
+                    ${escapeHTML(value)}
+                </a>
+            `;
+        }
+
+        return escapeHTML(value);
     }
 
     /* ==========================================
@@ -685,6 +783,25 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     /* ==========================================
+       SCANNER TEXT PREVIEW ELEMENT
+    ========================================== */
+
+    let scannerResultDisplay = document.getElementById(
+        "scannerHistoryPreviewText"
+    );
+
+    if (!scannerResultDisplay) {
+        scannerResultDisplay = document.createElement("div");
+        scannerResultDisplay.id = "scannerHistoryPreviewText";
+        scannerResultDisplay.hidden = true;
+
+        qrPreviewImage.insertAdjacentElement(
+            "afterend",
+            scannerResultDisplay
+        );
+    }
+
+    /* ==========================================
        PREVIEW MODAL
     ========================================== */
 
@@ -697,6 +814,19 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         qrPreviewLoading.hidden = false;
         qrPreviewLoading.textContent = "Loading preview...";
+
+        scannerResultDisplay.hidden = true;
+        scannerResultDisplay.textContent = "";
+
+        scannerCopyButton.hidden = true;
+        scannerCopyButton.disabled = false;
+        scannerCopyButton.textContent = "Copy";
+
+        qrPreviewDownload.hidden = false;
+        qrPreviewDownload.disabled = true;
+        qrPreviewDownload.textContent = "Download";
+
+        currentScannerText = "";
 
         if (currentPreviewUrl?.startsWith("blob:")) {
             URL.revokeObjectURL(currentPreviewUrl);
@@ -714,7 +844,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     function openPreviewModal(button, title, fileName) {
-        previousFocusElement = button;
+        previousFocusElement = button || null;
 
         qrPreviewModal.classList.add("active");
         qrPreviewModal.setAttribute("aria-hidden", "false");
@@ -725,6 +855,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         qrPreviewLoading.hidden = false;
         qrPreviewLoading.textContent = "Loading preview...";
 
+        scannerResultDisplay.hidden = true;
+        scannerResultDisplay.textContent = "";
+
+        scannerCopyButton.hidden = true;
+        scannerCopyButton.disabled = false;
+        scannerCopyButton.textContent = "Copy";
+
+        qrPreviewDownload.hidden = false;
         qrPreviewTitle.textContent = title;
 
         currentPreviewUrl = null;
@@ -732,6 +870,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         qrPreviewDownload.disabled = true;
         qrPreviewDownload.textContent = "Download";
+
+        currentScannerText = "";
 
         document.body.style.overflow = "hidden";
     }
@@ -865,6 +1005,94 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     /* ==========================================
+       VIEW SCANNER RESULT
+    ========================================== */
+
+    function viewScannerResult(record, button) {
+        const scannedText = getScannerResult(record);
+
+        if (!scannedText) {
+            alert("No scanned result is available for this record.");
+            return;
+        }
+
+        openPreviewModal(
+            button || null,
+            "Scanned Result",
+            "jscan-scanned-result.txt"
+        );
+
+        currentScannerText = scannedText;
+
+        qrPreviewImage.hidden = true;
+        qrPreviewLoading.hidden = true;
+        scannerResultDisplay.hidden = false;
+
+        scannerResultDisplay.innerHTML =
+            createScannerResultHTML(scannedText);
+
+        // Scanner results have Copy and Close only.
+        qrPreviewDownload.hidden = true;
+
+        scannerCopyButton.hidden = false;
+        scannerCopyButton.disabled = false;
+        scannerCopyButton.textContent = "Copy";
+    }
+
+    /* ==========================================
+       COPY SCANNER RESULT
+    ========================================== */
+
+    async function copyScannerResult() {
+        if (!currentScannerText) {
+            alert("No scanned result is available.");
+            return;
+        }
+
+        try {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(currentScannerText);
+
+            } else {
+                const textarea = document.createElement("textarea");
+
+                textarea.value = currentScannerText;
+                textarea.style.position = "fixed";
+                textarea.style.opacity = "0";
+
+                document.body.appendChild(textarea);
+
+                textarea.select();
+
+                const copied = document.execCommand("copy");
+
+                textarea.remove();
+
+                if (!copied) {
+                    throw new Error("Copy command failed.");
+                }
+            }
+
+            scannerCopyButton.textContent = "Copied!";
+            scannerCopyButton.disabled = true;
+
+            setTimeout(() => {
+                if (!scannerCopyButton.hidden) {
+                    scannerCopyButton.textContent = "Copy";
+                    scannerCopyButton.disabled = false;
+                }
+            }, 1500);
+
+        } catch (error) {
+            console.error("Scanner copy error:", error);
+
+            alert("Unable to copy the result. Please try again.");
+        }
+    }
+
+    scannerCopyButton.addEventListener("click", copyScannerResult);
+
+    /* ==========================================
        DOWNLOAD QR CODE
     ========================================== */
 
@@ -962,120 +1190,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     /* ==========================================
-       VIEW SCANNER RESULT
-    ========================================== */
-
-    function viewScannerResult(record) {
-        const scannedText = getScannerResult(record);
-
-        if (!scannedText) {
-            alert("No scanned result is available for this record.");
-            return;
-        }
-
-        openPreviewModal(
-            null,
-            "Scanned Result",
-            "jscan-scanned-result.txt"
-        );
-
-        // Scanner results are text, so display them in the preview area.
-        qrPreviewImage.hidden = true;
-        qrPreviewLoading.hidden = true;
-
-        let resultDisplay = document.getElementById(
-            "scannerHistoryPreviewText"
-        );
-
-        if (!resultDisplay) {
-            resultDisplay = document.createElement("div");
-            resultDisplay.id = "scannerHistoryPreviewText";
-
-            resultDisplay.style.cssText = `
-                width: 100%;
-                max-height: 65vh;
-                overflow: auto;
-                padding: 20px;
-                border: 1px solid var(--border-color, #ddd);
-                border-radius: 10px;
-                background: var(--card-bg, transparent);
-                color: var(--text-color, inherit);
-                white-space: pre-wrap;
-                overflow-wrap: anywhere;
-                line-height: 1.6;
-                font-size: 14px;
-            `;
-
-            qrPreviewImage.insertAdjacentElement(
-                "afterend",
-                resultDisplay
-            );
-        }
-
-        resultDisplay.textContent = scannedText;
-        resultDisplay.hidden = false;
-
-        currentPreviewUrl = null;
-        currentPreviewFileName = "jscan-scanned-result.txt";
-
-        qrPreviewDownload.disabled = false;
-    }
-
-    /* ==========================================
-       DOWNLOAD SCANNER RESULT
-    ========================================== */
-
-    function downloadScannerResult(record, button) {
-        const scannedText = getScannerResult(record);
-
-        if (!scannedText) {
-            alert("No scanned result is available.");
-            return;
-        }
-
-        const blob = new Blob(
-            [scannedText],
-            { type: "text/plain;charset=utf-8" }
-        );
-
-        downloadBlob(blob, "jscan-scanned-result.txt");
-    }
-
-    /* ==========================================
-       COPY SCANNER RESULT
-    ========================================== */
-
-    async function copyScannerResult(record, button) {
-        const scannedText = getScannerResult(record);
-
-        if (!scannedText) {
-            alert("No scanned result is available.");
-            return;
-        }
-
-        try {
-            await navigator.clipboard.writeText(scannedText);
-
-            const originalText = button.textContent;
-
-            button.textContent = "Copied!";
-            button.disabled = true;
-
-            setTimeout(() => {
-                button.textContent = originalText;
-                button.disabled = false;
-            }, 1500);
-
-        } catch (error) {
-            console.error("Scanner copy error:", error);
-
-            alert(
-                "Unable to copy the result. Please try again."
-            );
-        }
-    }
-
-    /* ==========================================
        PREVIEW DOWNLOAD BUTTON
     ========================================== */
 
@@ -1120,28 +1234,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     });
 
-    // Hide text preview whenever the modal is closed.
-    const originalClosePreview = closePreview;
-
-    function closePreviewWithTextCleanup() {
-        const resultDisplay = document.getElementById(
-            "scannerHistoryPreviewText"
-        );
-
-        if (resultDisplay) {
-            resultDisplay.hidden = true;
-            resultDisplay.textContent = "";
-        }
-
-        originalClosePreview();
-    }
-
-    closeQrPreview.removeEventListener("click", closePreview);
-    closeQrPreviewBtn.removeEventListener("click", closePreview);
-
-    closeQrPreview.addEventListener("click", closePreviewWithTextCleanup);
-    closeQrPreviewBtn.addEventListener("click", closePreviewWithTextCleanup);
-
     /* ==========================================
        DELETE ASSOCIATED STORAGE FILE
     ========================================== */
@@ -1168,8 +1260,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
         }
 
-        // Scanner results and barcode records are stored in History,
-        // not as separate files.
+        // Scanner results and barcode records do not
+        // have separate stored files to delete.
 
         if (!bucket || !path) {
             return true;
@@ -1430,7 +1522,9 @@ document.addEventListener("DOMContentLoaded", async () => {
                     ? "history-expired"
                     : "";
 
-            const scannerResult = getToolName(record).includes("scanner")
+            const isScanner = getToolName(record).includes("scanner");
+
+            const scannerResult = isScanner
                 ? getScannerResult(record)
                 : "";
 
@@ -1441,8 +1535,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 Boolean(temporaryFile) && !expired;
 
             const canViewScannerResult =
-                getToolName(record).includes("scanner") &&
-                Boolean(scannerResult);
+                isScanner && Boolean(scannerResult);
 
             return `
                 <article
@@ -1466,7 +1559,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
                         ${scannerResult ? `
                             <span class="history-result">
-                                ${escapeHTML(scannerResult)}
+                                ${createScannerResultHTML(scannerResult)}
                             </span>
                         ` : ""}
 
@@ -1543,20 +1636,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                                 class="btn btn-ghost view-scanner-btn"
                                 data-id="${escapeHTML(record.id)}">
                                 View
-                            </button>
-
-                            <button
-                                type="button"
-                                class="btn btn-ghost copy-scanner-btn"
-                                data-id="${escapeHTML(record.id)}">
-                                Copy
-                            </button>
-
-                            <button
-                                type="button"
-                                class="btn btn-ghost download-scanner-btn"
-                                data-id="${escapeHTML(record.id)}">
-                                Download
                             </button>
                         ` : ""}
 
@@ -1663,12 +1742,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         const viewScannerButton =
             event.target.closest(".view-scanner-btn");
 
-        const copyScannerButton =
-            event.target.closest(".copy-scanner-btn");
-
-        const downloadScannerButton =
-            event.target.closest(".download-scanner-btn");
-
         const deleteButton =
             event.target.closest(".delete-history-btn");
 
@@ -1751,31 +1824,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             );
 
             if (record) {
-                viewScannerResult(record);
-            }
-
-            return;
-        }
-
-        if (copyScannerButton) {
-            const record = currentPageRecords.find(
-                item => String(item.id) === copyScannerButton.dataset.id
-            );
-
-            if (record) {
-                await copyScannerResult(record, copyScannerButton);
-            }
-
-            return;
-        }
-
-        if (downloadScannerButton) {
-            const record = currentPageRecords.find(
-                item => String(item.id) === downloadScannerButton.dataset.id
-            );
-
-            if (record) {
-                downloadScannerResult(record, downloadScannerButton);
+                viewScannerResult(record, viewScannerButton);
             }
 
             return;
