@@ -1,4 +1,3 @@
-
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
 
 /* ==============================
@@ -1197,7 +1196,6 @@ select {
     accent-color: var(--blue);
     cursor: pointer;
 }
-
 #registerForm button {
     margin-top: 15px;
     min-height: 48px;
@@ -1277,7 +1275,6 @@ select {
 
 /* ==========================================
    JSCAN RESPONSIVE CORRECTIONS
-   Add at the bottom of css/style.css
 ========================================== */
 
 /* General responsive protection */
@@ -1597,5 +1594,126 @@ select:focus-visible {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
+    }
+}
+
+/* ==========================================
+   24. CONSISTENT SITE-WIDE MOBILE NAVIGATION
+========================================== */
+
+/* Dashboard is an always-visible shortcut when signed in. */
+.site-header .header-actions .dashboard-shortcut {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+}
+
+/* The mobile account links are displayed only inside the open menu. */
+.site-header .main-nav .mobile-auth-links {
+    display: none;
+}
+
+@media (max-width: 650px) {
+    .site-header {
+        position: sticky;
+        top: 0;
+        isolation: isolate;
+    }
+
+    .site-header .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        margin-left: auto;
+        flex-shrink: 0;
+    }
+
+    /* Hide desktop account controls, but keep Dashboard beside the theme toggle. */
+    .site-header .header-actions > .btn {
+        display: none;
+    }
+
+    .site-header .header-actions > .dashboard-shortcut {
+        display: inline-flex !important;
+        padding: 7px 9px;
+        font-size: 11px;
+        line-height: 1.2;
+        min-height: 35px;
+    }
+
+    .site-header .header-actions > [data-theme-toggle] {
+        display: inline-grid;
+        flex-shrink: 0;
+    }
+
+    .site-header .menu-toggle {
+        display: inline-flex;
+        flex-shrink: 0;
+        order: 10;
+        position: relative;
+        z-index: 23;
+    }
+
+    .site-header .main-nav {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        width: 100%;
+        max-height: calc(100vh - 68px);
+        overflow-y: auto;
+        padding: 18px 20px 22px;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+        box-shadow: var(--shadow);
+        z-index: 22;
+    }
+
+    .site-header .main-nav.open {
+        display: flex;
+    }
+
+    .site-header .main-nav > a {
+        display: flex;
+        align-items: center;
+        min-height: 40px;
+        padding: 7px 0;
+    }
+
+    .site-header .main-nav .mobile-auth-links {
+        display: flex !important;
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+        gap: 10px;
+        padding-top: 14px;
+        margin-top: 5px;
+        border-top: 1px solid var(--border);
+    }
+
+    .site-header .main-nav .mobile-auth-links a,
+    .site-header .main-nav .mobile-auth-links button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-height: 44px;
+        box-sizing: border-box;
+    }
+}
+
+@media (max-width: 380px) {
+    .site-header .header-actions {
+        gap: 5px;
+    }
+
+    .site-header .header-actions > .dashboard-shortcut {
+        padding-inline: 7px;
+        font-size: 10px;
     }
 }
