@@ -1,4 +1,6 @@
+
 import asyncio
+import os
 import shutil
 import subprocess
 import tempfile
@@ -24,7 +26,12 @@ from fastapi.middleware.cors import CORSMiddleware
 app = FastAPI(title="JScan API")
 
 
+# =========================================================
+# CORS CONFIGURATION
+# =========================================================
+
 ALLOWED_ORIGINS = [
+    "https://jscanit.pages.dev",
     "http://localhost",
     "http://127.0.0.1",
     "http://localhost:5500",
@@ -43,9 +50,18 @@ app.add_middleware(
 )
 
 
+# =========================================================
+# CONFIGURATION
+# =========================================================
+
 MAX_UPLOAD_SIZE = 200 * 1024 * 1024
 
-GOTENBERG_URL = "http://host.docker.internal:3000"
+# Read the Gotenberg address from Railway environment variables.
+# The fallback is for local development only.
+GOTENBERG_URL = os.getenv(
+    "GOTENBERG_URL",
+    "http://localhost:3000"
+).rstrip("/")
 
 
 QUALITY_SETTINGS = {
@@ -514,6 +530,8 @@ async def pdf_to_word(file: UploadFile = File(...)):
 
         if not cleanup_scheduled:
             shutil.rmtree(temp_dir, ignore_errors=True)
+
+
 # =========================================================
 # EXCEL FILE READING
 # =========================================================
@@ -779,6 +797,8 @@ async def excel_to_word(file: UploadFile = File(...)):
 
         if not cleanup_scheduled:
             shutil.rmtree(temp_dir, ignore_errors=True)
+
+
 # =========================================================
 # EXCEL TO PDF
 # =========================================================
@@ -882,11 +902,9 @@ def prepare_excel_for_pdf(input_path, extension, output_path):
     for worksheet in workbook.worksheets:
         worksheet.sheet_view.showGridLines = False
 
-        # Ignore completely empty sheets but retain them in the workbook.
         max_row = worksheet.max_row or 1
         max_column = worksheet.max_column or 1
 
-        # Apply a clear table layout to the used cell range.
         for row_index in range(1, max_row + 1):
             for column_index in range(1, max_column + 1):
                 cell = worksheet.cell(row=row_index, column=column_index)
@@ -903,7 +921,6 @@ def prepare_excel_for_pdf(input_path, extension, output_path):
                 else:
                     cell.font = body_font
 
-        # Estimate useful column widths from cell contents.
         for column_index in range(1, max_column + 1):
             longest = 0
 
@@ -920,11 +937,9 @@ def prepare_excel_for_pdf(input_path, extension, output_path):
                 get_column_letter(column_index)
             ].width = min(max(longest + 3, 12), 40)
 
-        # Make rows readable when cells contain long text.
         for row_index in range(1, max_row + 1):
             worksheet.row_dimensions[row_index].height = 24 if row_index == 1 else 30
 
-        # Configure the worksheet for predictable PDF pagination.
         worksheet.sheet_properties.pageSetUpPr.fitToPage = True
         worksheet.page_setup.orientation = (
             "landscape" if max_column > 5 else "portrait"
@@ -994,7 +1009,6 @@ async def convert_excel_to_pdf(file: UploadFile):
                 "The uploaded Excel file is empty."
             )
 
-        # Format the workbook before converting it to PDF.
         try:
             await asyncio.to_thread(
                 prepare_excel_for_pdf,
