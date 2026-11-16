@@ -1,4 +1,4 @@
-```javascript
+
 document.addEventListener("DOMContentLoaded", () => {
 
     // Live Railway API
@@ -72,6 +72,8 @@ document.addEventListener("DOMContentLoaded", () => {
     function handleFile(file) {
         if (!file) return;
 
+        if (isCompressing) return;
+
         if (
             file.type !== "application/pdf" &&
             !file.name.toLowerCase().endsWith(".pdf")
@@ -105,8 +107,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function resetCompressor() {
+        // Prevent resetting while a compression request is running.
+        if (isCompressing) return;
+
         selectedFile = null;
-        isCompressing = false;
 
         clearDownload();
 
@@ -140,7 +144,14 @@ document.addEventListener("DOMContentLoaded", () => {
         clearResult();
 
         isCompressing = true;
+
         updateCompressButton();
+
+        // Prevent changes to the selected file and settings during compression.
+        fileInput.disabled = true;
+        removeBtn.disabled = true;
+        resetBtn.disabled = true;
+        qualitySelect.disabled = true;
 
         compressBtn.textContent = "Compressing...";
 
@@ -249,6 +260,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
             compressBtn.textContent = originalCompressText;
 
+            fileInput.disabled = false;
+            removeBtn.disabled = false;
+            resetBtn.disabled = false;
+            qualitySelect.disabled = false;
+
             updateCompressButton();
         }
     }
@@ -275,6 +291,8 @@ document.addEventListener("DOMContentLoaded", () => {
         uploadArea.addEventListener("drop", event => {
             event.preventDefault();
             uploadArea.style.borderColor = "";
+
+            if (isCompressing) return;
 
             const file = event.dataTransfer.files[0];
 
@@ -315,4 +333,3 @@ document.addEventListener("DOMContentLoaded", () => {
     updateCompressButton();
 
 });
-```
