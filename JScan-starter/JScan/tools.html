@@ -23,6 +23,86 @@
             box-shadow: none;
             padding: 0;
         }
+
+        /* REDESIGNED TOOL SEARCH */
+
+        .tool-search {
+            position: relative;
+            display: flex;
+            align-items: center;
+            width: 100%;
+            max-width: 620px;
+            margin: 30px auto 35px;
+            padding: 5px 8px 5px 20px;
+            box-sizing: border-box;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 50px;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
+            transition: border-color .2s ease, box-shadow .2s ease;
+        }
+
+        .tool-search:focus-within {
+            border-color: var(--blue);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.10);
+        }
+
+        .tool-search input {
+            flex: 1;
+            min-width: 0;
+            width: 100%;
+            height: 46px;
+            padding: 0 12px;
+            border: none;
+            outline: none;
+            background: transparent;
+            color: var(--text);
+            font: inherit;
+            font-size: 15px;
+            box-shadow: none;
+        }
+
+        .tool-search input::placeholder {
+            color: var(--text-muted);
+            opacity: .85;
+        }
+
+        .tool-search input:focus {
+            outline: none;
+            border: none;
+            box-shadow: none;
+        }
+
+        .tool-search > span {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--blue);
+            color: #ffffff;
+            font-size: 24px;
+            line-height: 1;
+        }
+
+        /* HIDDEN SEARCH RESULTS */
+
+        .tool-card[hidden] {
+            display: none !important;
+        }
+
+        @media (max-width: 600px) {
+            .tool-search {
+                margin: 25px auto 28px;
+                padding-left: 15px;
+            }
+
+            .tool-search input {
+                font-size: 14px;
+            }
+        }
     </style>
 </head>
 
@@ -71,14 +151,16 @@
         </p>
     </div>
 
+    <!-- TOOL SEARCH -->
+
     <div class="tool-search">
         <input
             id="toolSearch"
             type="search"
-            placeholder="Search tools..."
+            placeholder="Search for a tool..."
             aria-label="Search tools"
         >
-        <span>⌕</span>
+        <span aria-hidden="true">⌕</span>
     </div>
 
     <div class="tool-grid" id="allTools">
@@ -86,7 +168,7 @@
         <!-- QR CODE GENERATOR -->
         <a class="tool-card"
            href="qr-generator.html"
-           data-name="qr code generator">
+           data-name="qr code generator qr generator">
 
             <span class="tool-icon tint-blue">▦</span>
             <h3>QR Code Generator</h3>
@@ -110,7 +192,7 @@
         <!-- QR & BARCODE SCANNER -->
         <a class="tool-card"
            href="scanner.html"
-           data-name="qr barcode scanner">
+           data-name="qr barcode scanner qr scanner barcode scanner">
 
             <span class="tool-icon tint-green">⌗</span>
             <h3>QR & Barcode Scanner</h3>
@@ -122,7 +204,7 @@
         <!-- WORD TO PDF -->
         <a class="tool-card"
            href="word-to-pdf.html"
-           data-name="word to pdf">
+           data-name="word to pdf docx to pdf">
 
             <span class="tool-icon tint-cyan">▣</span>
             <h3>Word to PDF</h3>
@@ -134,7 +216,7 @@
         <!-- PDF TO WORD -->
         <a class="tool-card"
            href="pdf-to-word.html"
-           data-name="pdf to word">
+           data-name="pdf to word pdf to docx">
 
             <span class="tool-icon tint-blue">▤</span>
             <h3>PDF to Word</h3>
@@ -143,26 +225,14 @@
 
         </a>
 
-        <!-- WORD TO EXCEL -->
+        <!-- PDF TO IMAGE -->
         <a class="tool-card"
-           href="word-to-excel.html"
-           data-name="word to excel">
+           href="pdf-to-image.html"
+           data-name="pdf to image pdf to jpg pdf to jpeg pdf to png convert pdf images">
 
-            <span class="tool-icon tint-green">▦</span>
-            <h3>Word to Excel</h3>
-            <p>Move structured document data into spreadsheets.</p>
-            <span class="card-link">Open tool →</span>
-
-        </a>
-
-        <!-- EXCEL TO WORD -->
-        <a class="tool-card"
-           href="excel-to-word.html"
-           data-name="excel to word">
-
-            <span class="tool-icon tint-purple">▤</span>
-            <h3>Excel to Word</h3>
-            <p>Turn spreadsheet content into a document.</p>
+            <span class="tool-icon tint-cyan">▧</span>
+            <h3>PDF to Image</h3>
+            <p>Convert PDF pages into downloadable JPG or PNG images.</p>
             <span class="card-link">Open tool →</span>
 
         </a>
@@ -170,7 +240,7 @@
         <!-- MERGE PDF -->
         <a class="tool-card"
            href="merge-pdf.html"
-           data-name="merge pdf">
+           data-name="merge pdf combine pdf">
 
             <span class="tool-icon tint-orange">⊞</span>
             <h3>Merge PDF</h3>
@@ -191,14 +261,26 @@
 
         </a>
 
-        <!-- PDF TO IMAGE -->
+        <!-- WORD & PDF TO EXCEL -->
         <a class="tool-card"
-           href="pdf-to-image.html"
-           data-name="pdf to image pdf to jpg pdf to jpeg pdf to png convert pdf images">
+           href="word-to-excel.html"
+           data-name="word and pdf to excel word to excel pdf to excel">
 
-            <span class="tool-icon tint-cyan">▧</span>
-            <h3>PDF to Image</h3>
-            <p>Convert PDF pages into downloadable JPG or PNG images.</p>
+            <span class="tool-icon tint-green">▦</span>
+            <h3>Word & PDF to Excel</h3>
+            <p>Move structured Word and PDF document data into spreadsheets.</p>
+            <span class="card-link">Open tool →</span>
+
+        </a>
+
+        <!-- EXCEL TO WORD & PDF -->
+        <a class="tool-card"
+           href="excel-to-word.html"
+           data-name="excel to word and pdf excel to word excel to pdf">
+
+            <span class="tool-icon tint-purple">▤</span>
+            <h3>Excel to Word & PDF</h3>
+            <p>Convert spreadsheet content into Word documents and PDF files.</p>
             <span class="card-link">Open tool →</span>
 
         </a>
@@ -206,7 +288,7 @@
         <!-- SPLIT PDF -->
         <a class="tool-card"
            href="split-pdf.html"
-           data-name="split pdf">
+           data-name="split pdf separate pdf">
 
             <span class="tool-icon tint-pink">⇱</span>
             <h3>Split PDF</h3>
@@ -242,7 +324,7 @@
         <!-- PROJECT ASSISTANT -->
         <a class="tool-card"
            href="project-writer.html"
-           data-name="project writer">
+           data-name="project writer project assistant">
 
             <span class="tool-icon tint-purple">✎</span>
             <h3>Project Assistant</h3>
