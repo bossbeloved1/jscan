@@ -1,0 +1,423 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PDF to Image — JScan</title>
+    <link rel="stylesheet" href="css/style.css">
+
+    <style>
+        .pdf-image-container {
+            width: 100%;
+            margin: 30px 0;
+        }
+
+        .pdf-image-upload {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            box-sizing: border-box;
+            width: 100%;
+            min-height: 300px;
+            padding: 40px 20px;
+            border: 2px dashed var(--border);
+            border-radius: 16px;
+            text-align: center;
+            background: var(--surface);
+            cursor: pointer;
+            transition: border-color .2s ease;
+        }
+
+        .pdf-image-upload:hover {
+            border-color: var(--blue);
+        }
+
+        .pdf-image-upload input {
+            display: none !important;
+        }
+
+        .pdf-image-upload h2,
+        .pdf-image-upload p {
+            margin: 0;
+        }
+
+        .pdf-image-upload-icon {
+            font-size: 42px;
+            color: var(--blue);
+        }
+
+        .pdf-image-status {
+            width: 100%;
+            margin-top: 15px;
+            text-align: center;
+            color: var(--text-muted);
+        }
+
+        .pdf-image-workspace {
+            display: none;
+            margin-top: 25px;
+        }
+
+        .pdf-image-settings {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin: 20px 0;
+            align-items: end;
+        }
+
+        .pdf-image-setting {
+            flex: 1;
+            min-width: 180px;
+        }
+
+        .pdf-image-setting label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .pdf-image-setting select,
+        .pdf-image-setting input {
+            box-sizing: border-box;
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--surface);
+            color: var(--text);
+            font: inherit;
+        }
+
+        .pdf-image-info {
+            margin: 15px 0;
+            padding: 12px 15px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-muted);
+            background: var(--surface);
+        }
+
+        .pdf-image-progress {
+            display: none;
+            width: 100%;
+            height: 9px;
+            margin: 15px 0;
+            overflow: hidden;
+            border-radius: 20px;
+            background: var(--border);
+        }
+
+        .pdf-image-progress-bar {
+            width: 0%;
+            height: 100%;
+            border-radius: 20px;
+            background: var(--blue);
+            transition: width .2s ease;
+        }
+
+        .pdf-image-results {
+            display: none;
+            margin-top: 25px;
+        }
+
+        .pdf-image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .pdf-image-card {
+            min-width: 0;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: var(--surface);
+        }
+
+        .pdf-image-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 13px 15px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .pdf-image-card-header h3 {
+            margin: 0;
+            font-size: 15px;
+        }
+
+        .pdf-image-preview {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 180px;
+            max-height: 350px;
+            padding: 12px;
+            overflow: auto;
+            background: #e5e7eb;
+        }
+
+        .pdf-image-preview img {
+            display: block;
+            max-width: 100%;
+            max-height: 320px;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            box-shadow: 0 2px 10px rgba(0,0,0,.15);
+        }
+
+        .pdf-image-card-body {
+            padding: 15px;
+        }
+
+        .pdf-image-card-body label {
+            display: block;
+            margin-bottom: 7px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .pdf-image-filename {
+            box-sizing: border-box;
+            width: 100%;
+            padding: 11px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--surface);
+            color: var(--text);
+            font: inherit;
+        }
+
+        .pdf-image-extension {
+            margin-top: 6px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .pdf-image-card-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        .pdf-image-card-actions button {
+            flex: 1;
+        }
+
+        .pdf-image-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 25px;
+        }
+
+        .pdf-image-actions button {
+            min-width: 150px;
+        }
+
+        @media(max-width: 600px) {
+            .pdf-image-upload {
+                min-height: 260px;
+                padding: 30px 15px;
+            }
+
+            .pdf-image-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .pdf-image-actions button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header class="site-header">
+    <a class="brand" href="index.html">
+        <span class="brand-mark">J</span>
+        <span>JScan</span>
+    </a>
+
+    <nav class="main-nav">
+        <a href="index.html">Home</a>
+        <a class="active" href="tools.html">Explore tools</a>
+        <a href="about.html">About</a>
+        <a href="contact.html">Contact</a>
+    </nav>
+
+    <div class="header-actions">
+        <button class="icon-btn" data-theme-toggle aria-label="Toggle theme">☾</button>
+        <a class="btn btn-ghost" href="login.html">Log in</a>
+        <a class="btn btn-primary" href="register.html">Create account</a>
+    </div>
+</header>
+
+<main class="wrap page-main">
+
+    <div class="breadcrumb">
+        <a href="tools.html">All tools</a>
+        <span>/</span>
+        <span>PDF to Image</span>
+    </div>
+
+    <div class="page-intro">
+        <span class="eyebrow">JSCAN WORKSPACE</span>
+        <h1>PDF to Image</h1>
+        <p>Convert PDF pages into high-quality JPG or PNG images.</p>
+    </div>
+
+    <section class="panel">
+        <div class="pdf-image-container">
+
+            <!-- PDF UPLOAD -->
+            <label class="pdf-image-upload" for="pdfImageFileInput">
+                <div class="pdf-image-upload-icon">🖼️</div>
+                <h2>Select a PDF document</h2>
+                <p>Choose a PDF file from your device</p>
+
+                <span class="btn btn-primary">
+                    Choose PDF Document
+                </span>
+
+                <input
+                    type="file"
+                    id="pdfImageFileInput"
+                    accept=".pdf,application/pdf"
+                >
+            </label>
+
+            <div class="pdf-image-status" id="pdfImageStatus">
+                No document selected.
+            </div>
+
+            <!-- CONVERSION WORKSPACE -->
+            <div class="pdf-image-workspace" id="pdfImageWorkspace">
+
+                <h2>Conversion settings</h2>
+                <p>Choose your preferred image format before converting.</p>
+
+                <div class="pdf-image-info" id="pdfImageFileInfo">
+                    No PDF information available.
+                </div>
+
+                <div class="pdf-image-settings">
+
+                    <div class="pdf-image-setting">
+                        <label for="pdfImageFormat">Image format</label>
+                        <select id="pdfImageFormat">
+                            <option value="jpeg">JPG / JPEG</option>
+                            <option value="png">PNG</option>
+                        </select>
+                    </div>
+
+                    <div class="pdf-image-setting">
+                        <label for="pdfImageZipFilename">ZIP filename</label>
+                        <input
+                            type="text"
+                            id="pdfImageZipFilename"
+                            value="JScan-PDF-Images"
+                            placeholder="Enter ZIP filename"
+                        >
+                    </div>
+
+                </div>
+
+                <div class="pdf-image-actions">
+                    <button
+                        type="button"
+                        class="btn btn-primary"
+                        id="pdfImageConvertBtn">
+                        Convert to Images
+                    </button>
+
+                    <button
+                        type="button"
+                        class="btn btn-ghost"
+                        id="pdfImageResetBtn">
+                        Remove PDF
+                    </button>
+                </div>
+
+                <div class="pdf-image-progress" id="pdfImageProgress">
+                    <div
+                        class="pdf-image-progress-bar"
+                        id="pdfImageProgressBar">
+                    </div>
+                </div>
+
+                <!-- CONVERTED IMAGE PREVIEWS -->
+                <div class="pdf-image-results" id="pdfImageResults">
+
+                    <h2>Converted images</h2>
+                    <p>
+                        Preview each page and rename individual images
+                        before downloading.
+                    </p>
+
+                    <div class="pdf-image-info" id="pdfImageResultInfo">
+                        No images converted yet.
+                    </div>
+
+                    <div class="pdf-image-grid" id="pdfImageGrid">
+                    </div>
+
+                    <div class="pdf-image-actions">
+
+                        <button
+                            type="button"
+                            class="btn btn-primary"
+                            id="pdfImageDownloadAllBtn"
+                            disabled>
+                            Download All as ZIP
+                        </button>
+
+                        <button
+                            type="button"
+                            class="btn btn-ghost"
+                            id="pdfImageDownloadSingleZipBtn"
+                            disabled>
+                            Download as ZIP
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+    </section>
+
+</main>
+
+<footer class="site-footer wrap">
+    <a class="brand" href="index.html">
+        <span class="brand-mark">J</span>
+        <span>JScan</span>
+    </a>
+
+    <span>© 2026 JScan</span>
+</footer>
+
+<!-- PDF.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+<!-- JSZip -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<script src="js/main.js"></script>
+<script src="js/pdf-to-image.js"></script>
+
+</body>
+</html>
