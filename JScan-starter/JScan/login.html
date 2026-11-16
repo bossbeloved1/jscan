@@ -9,7 +9,23 @@
 
     <meta name="description" content="Log in to your JScan digital workspace.">
 
+    <link rel="icon" type="image/svg+xml" href="css/logoextension.svg">
     <link rel="stylesheet" href="css/style.css">
+
+    <style>
+        /* JSCAN BRAND LOGO */
+
+        .brand-logo {
+            width: 50px;
+            height: 50px;
+            object-fit: contain;
+            display: block;
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            padding: 0;
+        }
+    </style>
 </head>
 
 <body>
@@ -17,7 +33,7 @@
 <header class="site-header">
 
     <a class="brand" href="index.html">
-        <span class="brand-mark">J</span>
+        <img src="css/logo.png" alt="JScan Logo" class="brand-logo">
         <span>JScan</span>
     </a>
 
@@ -29,7 +45,7 @@
     </nav>
 
     <div class="header-actions">
-        <button class="icon-btn" data-theme-toggle aria-label="Toggle theme">☾</button>
+        <button class="icon-btn" data-theme-toggle type="button" aria-label="Toggle theme">☾</button>
         <a class="btn btn-ghost" href="login.html">Log in</a>
         <a class="btn btn-primary" href="register.html">Create account</a>
     </div>
@@ -158,7 +174,7 @@
 <footer class="site-footer wrap">
 
     <a class="brand" href="index.html">
-        <span class="brand-mark">J</span>
+        <img src="css/logo.png" alt="JScan Logo" class="brand-logo">
         <span>JScan</span>
     </a>
 
