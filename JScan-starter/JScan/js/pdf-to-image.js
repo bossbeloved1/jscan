@@ -13,6 +13,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const imageGrid = document.getElementById("pdfImageGrid");
     const progress = document.getElementById("pdfImageProgress");
     const progressBar = document.getElementById("pdfImageProgressBar");
+
+    const selectAllCheckbox = document.getElementById("pdfImageSelectAll");
+    const selectedCount = document.getElementById("pdfImageSelectedCount");
+
+    const downloadSelectedBtn = document.getElementById("pdfImageDownloadSelectedBtn");
     const downloadAllBtn = document.getElementById("pdfImageDownloadAllBtn");
     const downloadSingleZipBtn = document.getElementById("pdfImageDownloadSingleZipBtn");
 
@@ -25,12 +30,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const PDFJS_WORKER =
         "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
-    // Configure PDF.js
     if (typeof pdfjsLib !== "undefined") {
         pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
     }
 
-    // SAFE FILE NAME
     function sanitizeFilename(value, fallback) {
         return (value || "")
             .trim()
@@ -39,40 +42,58 @@ document.addEventListener("DOMContentLoaded", () => {
             .trim() || fallback;
     }
 
-    // UPDATE STATUS
     function updateStatus(message) {
         status.textContent = message;
     }
 
-    // UPDATE PROGRESS
+    function getFormat() {
+        return formatSelect.value === "png" ? "png" : "jpeg";
+    }
+
+    function getMimeType() {
+        return getFormat() === "png" ? "image/png" : "image/jpeg";
+    }
+
+    function getExtension() {
+        return getFormat() === "png" ? "png" : "jpg";
+    }
+
+    function getSelectedImages() {
+        return convertedImages.filter(image => image.selected);
+    }
+
+    function updateSelectionControls() {
+        const selected = getSelectedImages();
+        const total = convertedImages.length;
+
+        selectedCount.textContent =
+            `${selected.length} of ${total} image(s) selected`;
+
+        selectAllCheckbox.checked = total > 0 && selected.length === total;
+        selectAllCheckbox.indeterminate =
+            selected.length > 0 && selected.length < total;
+
+        downloadSelectedBtn.disabled =
+            selected.length === 0 || isDownloading || isConverting;
+
+        downloadAllBtn.disabled =
+            total === 0 || isDownloading || isConverting;
+
+        downloadSingleZipBtn.disabled =
+            total !== 1 || isDownloading || isConverting;
+    }
+
     function updateProgress(current, total) {
         const percentage = total > 0
             ? Math.round((current / total) * 100)
             : 0;
 
         progressBar.style.width = `${percentage}%`;
+
         resultInfo.textContent =
             `Converting page ${current} of ${total} (${percentage}%).`;
     }
 
-    // GET CURRENT IMAGE FORMAT
-    function getFormat() {
-        return formatSelect.value === "png" ? "png" : "jpeg";
-    }
-
-    // GET IMAGE MIME TYPE
-    function getMimeType() {
-        return getFormat() === "png"
-            ? "image/png"
-            : "image/jpeg";
-    }
-
-    // GET FILE EXTENSION
-    function getExtension() {
-        return getFormat() === "png" ? "png" : "jpg";
-    }
-
-    // CLEAN UP GENERATED IMAGE URLS
     function clearConvertedImages() {
         convertedImages.forEach(image => {
             if (image.previewUrl) {
@@ -82,6 +103,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         convertedImages = [];
         imageGrid.innerHTML = "";
+
+        updateSelectionControls();
     }
 
     // LOAD PDF
@@ -118,8 +141,7 @@ document.addEventListener("DOMContentLoaded", () => {
         workspace.style.display = "block";
 
         convertBtn.disabled = true;
-        downloadAllBtn.disabled = true;
-        downloadSingleZipBtn.disabled = true;
+        updateSelectionControls();
 
         updateStatus("Loading your PDF document...");
         fileInfo.textContent = "Reading PDF information...";
@@ -164,7 +186,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // CONVERT PDF PAGES TO IMAGES
+    // CONVERT PDF TO IMAGES
     convertBtn.addEventListener("click", async () => {
         if (!selectedFile || !pdfDocument || isConverting || isDownloading) {
             updateStatus("Please upload a valid PDF document first.");
@@ -172,9 +194,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         if (typeof JSZip === "undefined") {
-            updateStatus(
-                "ZIP library failed to load. Check your internet connection."
-            );
+            updateStatus("ZIP library failed to load. Check your internet connection.");
             return;
         }
 
@@ -184,14 +204,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
         resultsArea.style.display = "block";
         progress.style.display = "block";
+        progressBar.style.width = "0%";
 
         convertBtn.disabled = true;
         resetBtn.disabled = true;
         fileInput.disabled = true;
         formatSelect.disabled = true;
-
-        downloadAllBtn.disabled = true;
-        downloadSingleZipBtn.disabled = true;
 
         convertBtn.textContent = "Converting...";
 
@@ -205,12 +223,10 @@ document.addEventListener("DOMContentLoaded", () => {
             for (let pageNumber = 1; pageNumber <= totalPages; pageNumber++) {
                 const page = await pdfDocument.getPage(pageNumber);
 
-                // Preserve each page's original dimensions and orientation.
-                // Render at a higher resolution for clearer output.
-                const scale = 2;
-                const viewport = page.getViewport({ scale });
+                const viewport = page.getViewport({ scale: 2 });
 
                 const canvas = document.createElement("canvas");
+
                 const context = canvas.getContext("2d", {
                     alpha: extension === "png"
                 });
@@ -222,10 +238,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 canvas.width = Math.ceil(viewport.width);
                 canvas.height = Math.ceil(viewport.height);
 
+                if (extension === "jpg") {
+                    context.fillStyle = "#ffffff";
+                    context.fillRect(0, 0, canvas.width, canvas.height);
+                }
+
                 await page.render({
                     canvasContext: context,
-                    viewport: viewport,
-                    background: extension === "jpg" ? "#ffffff" : undefined
+                    viewport: viewport
                 }).promise;
 
                 const blob = await new Promise((resolve, reject) => {
@@ -250,7 +270,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     pageNumber,
                     blob,
                     previewUrl,
-                    filename: `page-${pageNumber}.${extension}`
+                    filename: `page-${pageNumber}.${extension}`,
+                    selected: true
                 });
 
                 canvas.width = 0;
@@ -258,21 +279,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 updateProgress(pageNumber, totalPages);
 
-                // Give the browser time to update the interface.
                 await new Promise(resolve => setTimeout(resolve, 0));
             }
 
             renderImagePreviews();
 
             resultInfo.textContent =
-                `Successfully converted all ${totalPages} PDF page(s) into ${extension.toUpperCase()} images.`;
+                `Successfully converted all ${totalPages} PDF page(s).`;
 
             updateStatus(
-                "Conversion successful! Review and rename your images before downloading."
+                "Conversion successful! Select the images you want and rename them before downloading."
             );
 
-            downloadAllBtn.disabled = false;
-            downloadSingleZipBtn.disabled = false;
+            updateSelectionControls();
 
             resultsArea.scrollIntoView({
                 behavior: "smooth",
@@ -299,10 +318,12 @@ document.addEventListener("DOMContentLoaded", () => {
             formatSelect.disabled = false;
 
             convertBtn.textContent = "Convert to Images";
+
+            updateSelectionControls();
         }
     });
 
-    // RENDER IMAGE PREVIEWS
+    // DISPLAY IMAGE PREVIEWS
     function renderImagePreviews() {
         imageGrid.innerHTML = "";
 
@@ -316,7 +337,27 @@ document.addEventListener("DOMContentLoaded", () => {
             const title = document.createElement("h3");
             title.textContent = `Page ${image.pageNumber}`;
 
+            const selectLabel = document.createElement("label");
+            selectLabel.className = "pdf-image-card-select";
+
+            const checkbox = document.createElement("input");
+            checkbox.type = "checkbox";
+            checkbox.checked = image.selected;
+            checkbox.setAttribute(
+                "aria-label",
+                `Select page ${image.pageNumber}`
+            );
+
+            checkbox.addEventListener("change", () => {
+                convertedImages[index].selected = checkbox.checked;
+                updateSelectionControls();
+            });
+
+            selectLabel.appendChild(checkbox);
+            selectLabel.appendChild(document.createTextNode("Select"));
+
             header.appendChild(title);
+            header.appendChild(selectLabel);
 
             const preview = document.createElement("div");
             preview.className = "pdf-image-preview";
@@ -337,14 +378,6 @@ document.addEventListener("DOMContentLoaded", () => {
             filenameInput.type = "text";
             filenameInput.className = "pdf-image-filename";
             filenameInput.value = image.filename.replace(/\.[^.]+$/, "");
-            filenameInput.setAttribute(
-                "aria-label",
-                `Filename for page ${image.pageNumber}`
-            );
-
-            const extensionText = document.createElement("div");
-            extensionText.className = "pdf-image-extension";
-            extensionText.textContent = `File extension: .${getExtension()}`;
 
             filenameInput.addEventListener("input", () => {
                 convertedImages[index].filename =
@@ -353,6 +386,10 @@ document.addEventListener("DOMContentLoaded", () => {
                         `page-${image.pageNumber}`
                     ) + `.${getExtension()}`;
             });
+
+            const extensionText = document.createElement("div");
+            extensionText.className = "pdf-image-extension";
+            extensionText.textContent = `File extension: .${getExtension()}`;
 
             const actions = document.createElement("div");
             actions.className = "pdf-image-card-actions";
@@ -387,7 +424,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
             imageGrid.appendChild(card);
         });
+
+        updateSelectionControls();
     }
+
+    // SELECT OR DESELECT ALL
+    selectAllCheckbox.addEventListener("change", () => {
+        if (isConverting || isDownloading) return;
+
+        convertedImages.forEach(image => {
+            image.selected = selectAllCheckbox.checked;
+        });
+
+        imageGrid.querySelectorAll(".pdf-image-card-select input").forEach(
+            checkbox => {
+                checkbox.checked = selectAllCheckbox.checked;
+            }
+        );
+
+        updateSelectionControls();
+    });
 
     // DOWNLOAD ONE IMAGE
     function downloadImage(image) {
@@ -404,7 +460,7 @@ document.addEventListener("DOMContentLoaded", () => {
         setTimeout(() => URL.revokeObjectURL(downloadUrl), 1500);
     }
 
-    // UPDATE FILENAMES BEFORE ZIP DOWNLOAD
+    // READ ALL EDITED FILENAMES
     function updateAllFilenames() {
         const filenameInputs = imageGrid.querySelectorAll(
             ".pdf-image-filename"
@@ -421,42 +477,62 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // DOWNLOAD ALL IMAGES AS ZIP
+    // DOWNLOAD SELECTED IMAGES
+    downloadSelectedBtn.addEventListener("click", async () => {
+        if (isDownloading || isConverting) return;
+
+        const selected = getSelectedImages();
+
+        if (!selected.length) {
+            updateStatus("Please select at least one image to download.");
+            return;
+        }
+
+        await downloadImagesAsZip(selected);
+    });
+
+    // DOWNLOAD ALL IMAGES
     downloadAllBtn.addEventListener("click", async () => {
-        if (!convertedImages.length || isDownloading || isConverting) return;
+        if (isDownloading || isConverting || !convertedImages.length) return;
 
-        await downloadImagesAsZip();
+        await downloadImagesAsZip(convertedImages);
     });
 
-    // DOWNLOAD SINGLE PAGE AS ZIP
+    // SINGLE PAGE ZIP DOWNLOAD
     downloadSingleZipBtn.addEventListener("click", async () => {
-        if (convertedImages.length !== 1 || isDownloading || isConverting) return;
+        if (
+            isDownloading ||
+            isConverting ||
+            convertedImages.length !== 1
+        ) return;
 
-        await downloadImagesAsZip();
+        await downloadImagesAsZip(convertedImages);
     });
 
-    // CREATE AND DOWNLOAD ZIP
-    async function downloadImagesAsZip() {
+    // CREATE ZIP FILE
+    async function downloadImagesAsZip(imagesToDownload) {
         if (typeof JSZip === "undefined") {
             updateStatus("ZIP library is unavailable.");
             return;
         }
 
+        if (!imagesToDownload.length) return;
+
         isDownloading = true;
 
-        downloadAllBtn.disabled = true;
-        downloadSingleZipBtn.disabled = true;
-
         updateAllFilenames();
-
-        const zip = new JSZip();
+        updateSelectionControls();
 
         try {
-            convertedImages.forEach(image => {
+            const zip = new JSZip();
+
+            imagesToDownload.forEach(image => {
                 zip.file(image.filename, image.blob);
             });
 
-            updateStatus("Preparing your ZIP file. Please wait...");
+            updateStatus(
+                `Preparing ZIP file containing ${imagesToDownload.length} image(s)...`
+            );
 
             const zipBlob = await zip.generateAsync({
                 type: "blob",
@@ -484,7 +560,7 @@ document.addEventListener("DOMContentLoaded", () => {
             setTimeout(() => URL.revokeObjectURL(zipUrl), 1500);
 
             updateStatus(
-                `Success! ${convertedImages.length} image(s) downloaded in a ZIP file.`
+                `Success! ${imagesToDownload.length} image(s) downloaded in a ZIP file.`
             );
 
         } catch (error) {
@@ -496,13 +572,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
         } finally {
             isDownloading = false;
-
-            downloadAllBtn.disabled = convertedImages.length === 0;
-            downloadSingleZipBtn.disabled = convertedImages.length !== 1;
+            updateSelectionControls();
         }
     }
 
-    // CHANGE FORMAT
+    // CHANGE IMAGE FORMAT
     formatSelect.addEventListener("change", () => {
         if (isConverting || isDownloading) return;
 
@@ -511,16 +585,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
             resultsArea.style.display = "none";
 
-            downloadAllBtn.disabled = true;
-            downloadSingleZipBtn.disabled = true;
-
             updateStatus(
                 "Image format changed. Convert your PDF again to apply the new format."
             );
         }
     });
 
-    // REMOVE PDF AND RESET TOOL
+    // REMOVE PDF
     resetBtn.addEventListener("click", () => {
         if (isConverting || isDownloading) return;
 
@@ -543,14 +614,14 @@ document.addEventListener("DOMContentLoaded", () => {
         zipFilenameInput.value = "JScan-PDF-Images";
 
         convertBtn.disabled = true;
-        downloadAllBtn.disabled = true;
-        downloadSingleZipBtn.disabled = true;
 
         updateStatus("No document selected.");
+        updateSelectionControls();
     });
 
     // INITIAL STATE
     convertBtn.disabled = true;
+    downloadSelectedBtn.disabled = true;
     downloadAllBtn.disabled = true;
     downloadSingleZipBtn.disabled = true;
 
