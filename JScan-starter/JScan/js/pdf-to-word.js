@@ -1,5 +1,5 @@
 
-const API_URL = "http://localhost:8000/pdf-to-word";
+const API_URL = "https://jscan-production.up.railway.app/pdf-to-word";
 
 const pdfInput = document.getElementById("pdfWordInput");
 const dropArea = document.getElementById("pdfWordDropArea");
@@ -340,7 +340,6 @@ viewer.addEventListener("click", event => {
     }
 });
 
-
 /* ------------------------------
    CONVERSION RESULTS
 ------------------------------ */
@@ -364,7 +363,6 @@ function createResultRow(file, blob, error = null) {
     row.appendChild(details);
 
     if (blob) {
-        // Direct download button
         const downloadBtn = document.createElement("button");
         downloadBtn.type = "button";
         downloadBtn.className = "btn btn-primary";
@@ -384,7 +382,6 @@ function createResultRow(file, blob, error = null) {
             setTimeout(() => URL.revokeObjectURL(url), 1000);
         });
 
-        // Edit button
         const editBtn = document.createElement("button");
         editBtn.type = "button";
         editBtn.className = "btn btn-secondary";
@@ -396,9 +393,9 @@ function createResultRow(file, blob, error = null) {
 
         const actions = document.createElement("div");
         actions.className = "pdf-word-result-actions";
-actions.style.display = "flex";
-actions.style.gap = "12px";
-actions.style.flexWrap = "wrap";
+        actions.style.display = "flex";
+        actions.style.gap = "12px";
+        actions.style.flexWrap = "wrap";
 
         actions.append(downloadBtn, editBtn);
         row.appendChild(actions);
@@ -406,7 +403,6 @@ actions.style.flexWrap = "wrap";
 
     resultsBox.appendChild(row);
 }
-
 
 /* ------------------------------
    PDF TO WORD CONVERSION
