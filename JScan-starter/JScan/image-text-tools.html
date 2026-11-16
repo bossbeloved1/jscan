@@ -6,117 +6,83 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>Image & Handwriting to Text — JScan</title>
-    <meta name="description" content="Extract printed text from images or convert handwritten notes into editable text with JScan.">
+    <meta name="description" content="Extract printed text from images and convert handwritten notes into editable text with JScan.">
 
     <link rel="icon" type="image/svg+xml" href="css/logoextension.svg">
     <link rel="stylesheet" href="css/style.css">
 
     <style>
-        .selection-container {
-            width: min(1100px, 92%);
-            margin: 0 auto;
-            padding: 45px 0 75px;
+        .brand-logo {
+            width: 50px;
+            height: 50px;
+            object-fit: contain;
+            display: block;
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            padding: 0;
         }
 
-        .breadcrumb {
-            margin-bottom: 35px;
-            font-size: 14px;
-            color: var(--text-secondary, #777);
-        }
-
-        .breadcrumb a {
-            color: var(--primary-color, #2563eb);
-            text-decoration: none;
-        }
-
-        .selection-heading {
-            text-align: center;
-            max-width: 700px;
-            margin: 0 auto 45px;
-        }
-
-        .selection-heading h1 {
-            font-size: clamp(28px, 5vw, 42px);
-            margin-bottom: 14px;
-        }
-
-        .selection-heading p {
-            font-size: 16px;
-            line-height: 1.7;
-            color: var(--text-secondary, #777);
-        }
-
-        .selection-grid {
+        .text-tools-options {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 25px;
-            max-width: 850px;
-            margin: 0 auto;
+            gap: 24px;
+            max-width: 950px;
+            margin: 40px auto;
         }
 
-        .selection-card {
-            display: flex;
-            flex-direction: column;
-            padding: 30px;
-            min-height: 280px;
-            border: 1px solid var(--border-color, #e5e7eb);
-            border-radius: 16px;
-            background: var(--card-bg, #fff);
-            color: inherit;
+        .text-tools-option {
+            display: block;
             text-decoration: none;
-            transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+            color: inherit;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 35px 25px;
+            text-align: center;
+            transition: transform .2s ease, border-color .2s ease;
         }
 
-        .selection-card:hover {
+        .text-tools-option:hover {
             transform: translateY(-5px);
-            border-color: var(--primary-color, #2563eb);
-            box-shadow: 0 12px 30px rgba(0, 0, 0, .07);
+            border-color: var(--blue);
         }
 
-        .selection-icon {
-            width: 58px;
-            height: 58px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 14px;
+        .text-tools-option-icon {
+            width: 76px;
+            height: 76px;
+            display: grid;
+            place-items: center;
+            margin: 0 auto 20px;
+            border-radius: 20px;
             background: rgba(37, 99, 235, .10);
-            color: var(--primary-color, #2563eb);
-            font-size: 29px;
-            margin-bottom: 25px;
+            color: var(--blue);
+            font-size: 38px;
         }
 
-        .selection-card h2 {
-            font-size: 21px;
-            margin: 0 0 12px;
+        .text-tools-option h2 {
+            margin-bottom: 10px;
         }
 
-        .selection-card p {
-            color: var(--text-secondary, #777);
-            font-size: 14px;
+        .text-tools-option p {
+            color: var(--muted);
             line-height: 1.7;
-            margin: 0 0 25px;
+            margin-bottom: 22px;
         }
 
-        .selection-link {
-            margin-top: auto;
-            color: var(--primary-color, #2563eb);
-            font-weight: 600;
-            font-size: 14px;
+        .text-tools-option .btn {
+            display: inline-block;
         }
 
-        @media (max-width: 650px) {
-            .selection-grid {
+        @media (max-width: 600px) {
+            .text-tools-options {
                 grid-template-columns: 1fr;
+                gap: 16px;
+                margin-top: 25px;
             }
 
-            .selection-card {
-                min-height: 250px;
-                padding: 25px;
-            }
-
-            .selection-container {
-                padding-top: 30px;
+            .text-tools-option {
+                padding: 28px 20px;
             }
         }
     </style>
@@ -124,93 +90,111 @@
 
 <body>
 
-    <header class="main-header">
-        <div class="container header-content">
-            <a href="index.html" class="brand">
-                <img src="css/logo.png" alt="JScan Logo" class="brand-logo">
-            </a>
+<header class="site-header">
 
-            <nav class="main-nav">
-                <a href="index.html">Home</a>
-                <a href="tools.html">Explore Tools</a>
-                <a href="about.html">About</a>
-                <a href="contact.html">Contact</a>
-            </nav>
+    <a class="brand" href="index.html">
+        <img src="css/logo.png" alt="JScan Logo" class="brand-logo">
+        <span>JScan</span>
+    </a>
 
-            <div class="header-actions">
-                <button class="theme-toggle" data-theme-toggle aria-label="Toggle theme">
-                    <span class="theme-toggle-icon">☀</span>
-                </button>
-            </div>
-        </div>
-    </header>
+    <button class="menu-toggle"
+            type="button"
+            aria-label="Open navigation menu"
+            aria-controls="mainNavigation"
+            aria-expanded="false">
+        ☰
+    </button>
 
-    <main class="selection-container">
+    <nav class="main-nav" id="mainNavigation">
+        <a href="index.html">Home</a>
+        <a class="active" href="tools.html">Explore tools</a>
+        <a href="about.html">About</a>
+        <a href="contact.html">Contact</a>
+    </nav>
 
-        <div class="breadcrumb">
-            <a href="index.html">Home</a>
-            <span> / </span>
-            <a href="tools.html">Explore Tools</a>
-            <span> / </span>
-            <span>Image & Handwriting to Text</span>
-        </div>
+    <div class="header-actions">
+        <button class="icon-btn"
+                type="button"
+                data-theme-toggle
+                aria-label="Toggle theme">☾</button>
 
-        <section class="selection-heading">
-            <h1>Image & Handwriting to Text</h1>
+        <a class="btn btn-ghost" href="login.html">Log in</a>
+        <a class="btn btn-primary" href="register.html">Create account</a>
+    </div>
+
+</header>
+
+<main class="wrap page-main">
+
+    <div class="breadcrumb">
+        <a href="tools.html">All tools</a>
+        <span>/</span>
+        <span>Image & Handwriting to Text</span>
+    </div>
+
+    <section class="page-intro">
+        <span class="eyebrow">JSCAN WORKSPACE</span>
+
+        <h1>What would you like to convert?</h1>
+
+        <p>
+            Extract printed text from images and scanned documents,
+            or convert handwritten notes into editable digital text.
+        </p>
+    </section>
+
+    <section class="text-tools-options">
+
+        <a href="image-to-text.html" class="text-tools-option">
+
+            <div class="text-tools-option-icon">▧</div>
+
+            <h2>Image to Text</h2>
+
             <p>
-                Choose the type of text you want to extract. Convert printed
-                text from images or turn handwritten notes into editable text.
+                Extract printed text from photographs, images and
+                scanned documents. Edit the extracted content and
+                download it as a Word or PDF document.
             </p>
-        </section>
 
-        <section class="selection-grid">
+            <span class="btn btn-primary">
+                Extract Text →
+            </span>
 
-            <a href="image-to-text.html" class="selection-card">
-                <div class="selection-icon" aria-hidden="true">▧</div>
+        </a>
 
-                <h2>Image to Text</h2>
+        <a href="handwriting-to-text.html" class="text-tools-option">
 
-                <p>
-                    Extract printed text from images, photographs and scanned
-                    documents. Edit the extracted content and download it as
-                    a Word or PDF document.
-                </p>
+            <div class="text-tools-option-icon">✍</div>
 
-                <span class="selection-link">Open Image to Text →</span>
-            </a>
+            <h2>Handwriting to Text</h2>
 
-            <a href="handwriting-to-text.html" class="selection-card">
-                <div class="selection-icon" aria-hidden="true">✍</div>
+            <p>
+                Convert handwritten notes, letters and documents
+                into editable digital text using handwriting
+                recognition technology.
+            </p>
 
-                <h2>Handwriting to Text</h2>
+            <span class="btn btn-primary">
+                Convert Handwriting →
+            </span>
 
-                <p>
-                    Convert handwritten notes, letters and documents into
-                    editable digital text using handwriting recognition.
-                </p>
+        </a>
 
-                <span class="selection-link">Open Handwriting to Text →</span>
-            </a>
+    </section>
 
-        </section>
+</main>
 
-    </main>
+<footer class="site-footer wrap">
+    <a class="brand" href="index.html">
+        <img src="css/logo.png" alt="JScan Logo" class="brand-logo">
+        <span>JScan</span>
+    </a>
 
-    <footer class="main-footer">
-        <div class="container">
-            <p>&copy; <span id="current-year"></span> JScan. All rights reserved.</p>
-        </div>
-    </footer>
+    <span>© 2026 JScan</span>
+</footer>
 
-    <script src="js/main.js"></script>
-
-    <script>
-        const yearElement = document.getElementById("current-year");
-
-        if (yearElement) {
-            yearElement.textContent = new Date().getFullYear();
-        }
-    </script>
+<script src="js/main.js"></script>
 
 </body>
 </html>
