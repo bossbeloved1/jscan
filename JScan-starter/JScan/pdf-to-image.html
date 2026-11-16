@@ -124,6 +124,40 @@
             margin-top: 25px;
         }
 
+        .pdf-image-selection {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--surface);
+        }
+
+        .pdf-image-select-all {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .pdf-image-select-all input,
+        .pdf-image-card-select input {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--blue);
+            cursor: pointer;
+        }
+
+        .pdf-image-selected-count {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
         .pdf-image-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -151,6 +185,14 @@
         .pdf-image-card-header h3 {
             margin: 0;
             font-size: 15px;
+        }
+
+        .pdf-image-card-select {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 13px;
+            cursor: pointer;
         }
 
         .pdf-image-preview {
@@ -237,6 +279,11 @@
             .pdf-image-actions button {
                 width: 100%;
             }
+
+            .pdf-image-selection {
+                align-items: flex-start;
+                flex-direction: column;
+            }
         }
     </style>
 </head>
@@ -280,7 +327,6 @@
     <section class="panel">
         <div class="pdf-image-container">
 
-            <!-- PDF UPLOAD -->
             <label class="pdf-image-upload" for="pdfImageFileInput">
                 <div class="pdf-image-upload-icon">🖼️</div>
                 <h2>Select a PDF document</h2>
@@ -301,7 +347,6 @@
                 No document selected.
             </div>
 
-            <!-- CONVERSION WORKSPACE -->
             <div class="pdf-image-workspace" id="pdfImageWorkspace">
 
                 <h2>Conversion settings</h2>
@@ -356,23 +401,48 @@
                     </div>
                 </div>
 
-                <!-- CONVERTED IMAGE PREVIEWS -->
                 <div class="pdf-image-results" id="pdfImageResults">
 
                     <h2>Converted images</h2>
                     <p>
-                        Preview each page and rename individual images
-                        before downloading.
+                        Preview each page, select the images you want,
+                        and rename them before downloading.
                     </p>
 
                     <div class="pdf-image-info" id="pdfImageResultInfo">
                         No images converted yet.
                     </div>
 
-                    <div class="pdf-image-grid" id="pdfImageGrid">
+                    <div class="pdf-image-selection">
+
+                        <label class="pdf-image-select-all">
+                            <input
+                                type="checkbox"
+                                id="pdfImageSelectAll"
+                                checked
+                            >
+                            Select all images
+                        </label>
+
+                        <span
+                            class="pdf-image-selected-count"
+                            id="pdfImageSelectedCount">
+                            0 images selected
+                        </span>
+
                     </div>
 
+                    <div class="pdf-image-grid" id="pdfImageGrid"></div>
+
                     <div class="pdf-image-actions">
+
+                        <button
+                            type="button"
+                            class="btn btn-primary"
+                            id="pdfImageDownloadSelectedBtn"
+                            disabled>
+                            Download Selected as ZIP
+                        </button>
 
                         <button
                             type="button"
@@ -410,10 +480,7 @@
     <span>© 2026 JScan</span>
 </footer>
 
-<!-- PDF.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-
-<!-- JSZip -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
 <script src="js/main.js"></script>
