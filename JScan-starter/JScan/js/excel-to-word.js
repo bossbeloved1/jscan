@@ -7,7 +7,7 @@
 (() => {
     "use strict";
 
-    const API_URL = "http://localhost:8000";
+    const API_URL = "https://jscan-production.up.railway.app";
 
     const EW = {
         files: [],
@@ -214,7 +214,10 @@
         el.dropArea.addEventListener("drop", event => {
             event.preventDefault();
             el.dropArea.classList.remove("drag-over");
-            addFiles(event.dataTransfer.files);
+
+            if (!EW.isConverting) {
+                addFiles(event.dataTransfer.files);
+            }
         });
 
         el.fileList.addEventListener("click", handleFileActions);
@@ -227,7 +230,6 @@
         el.previewBtn?.addEventListener("click", showDocumentPreview);
         el.downloadBtn?.addEventListener("click", downloadEditedDocument);
 
-        // Preserve selected text before toolbar controls take focus.
         el.editor?.querySelectorAll(
             ".word-excel-editor-toolbar button, .word-excel-editor-toolbar select, .word-excel-editor-toolbar input"
         ).forEach(control => {
@@ -539,6 +541,8 @@
         if (!item) return;
 
         if (button.dataset.action === "remove") {
+            if (EW.isConverting) return;
+
             EW.files = EW.files.filter(file => file.id !== item.id);
 
             renderFiles();
@@ -712,7 +716,7 @@
             });
         } catch (error) {
             throw new Error(
-                "Cannot connect to JScan API. Make sure Docker is running and localhost:8000 is accessible."
+                "Cannot connect to JScan API. Please check your internet connection and try again."
             );
         }
 
@@ -891,7 +895,6 @@
 
             setEditorStatus("Document ready for editing.");
 
-            // Bring the editor into view after it opens.
             el.editor.scrollIntoView({
                 behavior: "smooth",
                 block: "start"
