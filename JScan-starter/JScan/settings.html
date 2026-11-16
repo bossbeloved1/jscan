@@ -7,7 +7,7 @@
 
     <title>Settings — JScan</title>
 
-    <meta name="description" content="Manage your JScan profile, account, password and appearance.">
+    <meta name="description" content="Manage your JScan profile, account and password.">
 
     <link rel="icon" type="image/svg+xml" href="css/logoextension.svg">
     <link rel="stylesheet" href="css/style.css">
@@ -174,25 +174,6 @@
             background: rgba(220, 38, 38, .10);
         }
 
-        .appearance-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-
-        .appearance-info h3 {
-            margin: 0 0 5px;
-            font-size: 15px;
-        }
-
-        .appearance-info p {
-            margin: 0;
-            color: var(--text-muted);
-            font-size: 13px;
-        }
-
         .danger-section {
             border: 1px solid rgba(220, 38, 38, .25);
         }
@@ -296,8 +277,7 @@
         <h1>Settings</h1>
 
         <p>
-            Manage your personal information, account security
-            and JScan appearance.
+            Manage your personal information and account security.
         </p>
 
     </div>
@@ -500,40 +480,6 @@
             ></div>
 
         </form>
-
-    </section>
-
-
-    <!-- APPEARANCE SETTINGS -->
-    <section class="panel settings-section">
-
-        <div class="settings-section-header">
-            <h2>Appearance</h2>
-            <p>Choose how JScan looks on your device.</p>
-        </div>
-
-        <div class="appearance-row">
-
-            <div class="appearance-info">
-
-                <h3>Light and Dark Mode</h3>
-
-                <p>
-                    Switch between light and dark appearance.
-                </p>
-
-            </div>
-
-            <button
-                type="button"
-                class="btn btn-primary"
-                data-theme-toggle
-                id="settingsThemeToggle"
-            >
-                Toggle Theme
-            </button>
-
-        </div>
 
     </section>
 
