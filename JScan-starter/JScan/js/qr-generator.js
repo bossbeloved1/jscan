@@ -36,7 +36,6 @@
     const removeLogo = $('removeLogo');
 
     let qr = null;
-    let debounce;
     let uploadedLogo = null;
     let logoReady = false;
     let isSaving = false;
@@ -229,7 +228,8 @@
 
                     logoOptions.hidden = false;
 
-                    update();
+                    // A new logo requires fresh QR generation.
+                    clearGeneratedQr();
                 };
 
                 image.onerror = function () {
@@ -255,7 +255,9 @@
     if (logoSize) {
         logoSize.addEventListener('input', function () {
             logoSizeValue.textContent = this.value + '%';
-            schedule();
+
+            // Require Generate after changing logo size.
+            clearGeneratedQr();
         });
     }
 
@@ -285,7 +287,8 @@
 
             logoOptions.hidden = true;
 
-            update();
+            // Require Generate after removing logo.
+            clearGeneratedQr();
         });
     }
 
@@ -356,77 +359,130 @@
     }
 
     // ==========================================
-    // 8. QR GENERATION
+    // 8. CLEAR GENERATED QR CODE
     // ==========================================
 
-    function update() {
+    function clearGeneratedQr() {
+        holder.innerHTML = '';
+        holder.style.display = 'none';
+
+        placeholder.hidden = false;
+
+        qr = null;
+
+        // Disable downloads until a new QR is generated.
+        downloadPng.disabled = true;
+        downloadSvg.disabled = true;
+
+        // Disable saving until a new QR is generated.
+        if (saveQrCode) {
+            saveQrCode.disabled = true;
+        }
+    }
+
+    // ==========================================
+    // 9. GENERATE QR CODE
+    // ==========================================
+
+    function generateQr() {
         const content = text.value.trim();
 
-        downloadPng.disabled = !content;
-        downloadSvg.disabled = !content;
-
-        if (saveQrCode) {
-            saveQrCode.disabled = !content || isSaving;
-        }
+        // Remove any previous QR before generating.
+        clearGeneratedQr();
 
         if (!content) {
-            holder.innerHTML = '';
-            holder.style.display = 'none';
-            placeholder.hidden = false;
-            qr = null;
-            return;
+            contrastNote.textContent =
+                'Please enter some text or a website URL first.';
+
+            return false;
         }
 
         if (!window.QRCode) {
             contrastNote.textContent =
                 'QR library did not load. Check your internet connection and refresh.';
 
-            return;
+            return false;
         }
-
-        holder.innerHTML = '';
-        holder.style.display = 'block';
-        placeholder.hidden = true;
 
         const dimension = Number(size.value);
 
-        qr = new QRCode(holder, {
-            text: content,
-            width: dimension,
-            height: dimension,
-            colorDark: fg.value,
-            colorLight: bg.value,
-            correctLevel: QRCode.CorrectLevel.H
-        });
+        if (!Number.isFinite(dimension) || dimension <= 0) {
+            contrastNote.textContent =
+                'Please select a valid QR code size.';
 
-        const canvas = holder.querySelector('canvas');
-
-        if (canvas && uploadedLogo && logoReady) {
-            drawLogo(canvas);
+            return false;
         }
 
-        const ratio = contrastRatio(fg.value, bg.value);
+        try {
+            holder.style.display = 'block';
 
-        if (ratio < 3) {
+            qr = new QRCode(holder, {
+                text: content,
+                width: dimension,
+                height: dimension,
+                colorDark: fg.value,
+                colorLight: bg.value,
+                correctLevel: QRCode.CorrectLevel.H
+            });
+
+            const canvas = getCanvas();
+
+            if (!canvas) {
+                holder.innerHTML = '';
+                holder.style.display = 'none';
+                placeholder.hidden = false;
+                qr = null;
+
+                contrastNote.textContent =
+                    'Unable to generate QR code. Please try again.';
+
+                return false;
+            }
+
+            // Add uploaded logo if available.
+            if (uploadedLogo && logoReady) {
+                drawLogo(canvas);
+            }
+
+            // Display placeholder only after successful generation.
+            placeholder.hidden = true;
+
+            // Check colour contrast.
+            const ratio = contrastRatio(fg.value, bg.value);
+
+            if (ratio < 3) {
+                contrastNote.textContent =
+                    '⚠ Low contrast. Choose a darker code colour or lighter background to improve scanning.';
+
+                contrastNote.classList.add('warning');
+            } else {
+                contrastNote.textContent =
+                    '✓ Colour contrast looks suitable for scanning.';
+
+                contrastNote.classList.remove('warning');
+            }
+
+            // Enable download buttons.
+            downloadPng.disabled = false;
+            downloadSvg.disabled = false;
+
+            // Enable save button.
+            if (saveQrCode) {
+                saveQrCode.disabled = isSaving;
+            }
+
+            return true;
+
+        } catch (error) {
+            console.error('QR generation error:', error);
+
+            clearGeneratedQr();
+
             contrastNote.textContent =
-                '⚠ Low contrast. Choose a darker code colour or lighter background to improve scanning.';
+                'Unable to generate QR code. Please try again.';
 
-            contrastNote.classList.add('warning');
-        } else {
-            contrastNote.textContent =
-                '✓ Colour contrast looks suitable for scanning.';
-
-            contrastNote.classList.remove('warning');
+            return false;
         }
-    }
-
-    // ==========================================
-    // 9. UPDATE DEBOUNCE
-    // ==========================================
-
-    function schedule() {
-        clearTimeout(debounce);
-        debounce = setTimeout(update, 180);
     }
 
     // ==========================================
@@ -435,12 +491,14 @@
 
     fg.addEventListener('input', () => {
         syncColor(fg, fgHex);
-        schedule();
+
+        clearGeneratedQr();
     });
 
     bg.addEventListener('input', () => {
         syncColor(bg, bgHex);
-        schedule();
+
+        clearGeneratedQr();
     });
 
     // ==========================================
@@ -450,14 +508,16 @@
     fgHex.addEventListener('input', () => {
         if (validHex(fgHex.value)) {
             fg.value = fgHex.value;
-            schedule();
+
+            clearGeneratedQr();
         }
     });
 
     bgHex.addEventListener('input', () => {
         if (validHex(bgHex.value)) {
             bg.value = bgHex.value;
-            schedule();
+
+            clearGeneratedQr();
         }
     });
 
@@ -465,15 +525,18 @@
     // 12. CONTENT AND SIZE EVENTS
     // ==========================================
 
-    text.addEventListener('input', schedule);
+    text.addEventListener('input', clearGeneratedQr);
 
-    size.addEventListener('change', schedule);
+    size.addEventListener('change', clearGeneratedQr);
 
-    // Log only when the user explicitly clicks Generate.
+    // ==========================================
+    // 13. GENERATE BUTTON
+    // ==========================================
+
     generateBtn.addEventListener('click', async () => {
-        update();
+        const generated = generateQr();
 
-        if (!text.value.trim() || !getCanvas()) return;
+        if (!generated || !getCanvas()) return;
 
         await logActivity(
             'QR code generated',
@@ -488,7 +551,7 @@
     });
 
     // ==========================================
-    // 13. POPULAR COLOUR PRESETS
+    // 14. POPULAR COLOUR PRESETS
     // ==========================================
 
     $('swatches').addEventListener('click', event => {
@@ -505,11 +568,11 @@
                 item.classList.toggle('selected', item === button);
             });
 
-        schedule();
+        clearGeneratedQr();
     });
 
     // ==========================================
-    // 14. GET GENERATED QR CANVAS
+    // 15. GET GENERATED QR CANVAS
     // ==========================================
 
     function getCanvas() {
@@ -517,7 +580,7 @@
     }
 
     // ==========================================
-    // 15. CREATE PNG BLOB
+    // 16. CREATE PNG BLOB
     // ==========================================
 
     function createQrImageBlob(canvas) {
@@ -534,7 +597,7 @@
     }
 
     // ==========================================
-    // 16. DOWNLOAD PNG
+    // 17. DOWNLOAD PNG
     // ==========================================
 
     downloadPng.addEventListener('click', async () => {
@@ -579,7 +642,7 @@
     });
 
     // ==========================================
-    // 17. DOWNLOAD SVG
+    // 18. DOWNLOAD SVG
     // ==========================================
 
     downloadSvg.addEventListener('click', async () => {
@@ -648,7 +711,7 @@
     });
 
     // ==========================================
-    // 18. SAVE QR CODE AND IMAGE TO SUPABASE
+    // 19. SAVE QR CODE AND IMAGE TO SUPABASE
     // ==========================================
 
     if (saveQrCode) {
@@ -850,7 +913,7 @@
 
                 isSaving = false;
 
-                saveQrCode.disabled = !text.value.trim();
+                saveQrCode.disabled = !getCanvas();
                 saveQrCode.textContent = 'Save QR Code';
 
             }
@@ -858,9 +921,10 @@
     }
 
     // ==========================================
-    // 19. INITIALIZE
+    // 20. INITIALIZE
     // ==========================================
 
-    update();
+    // Do not generate a QR code automatically on page load.
+    clearGeneratedQr();
 
 })();
