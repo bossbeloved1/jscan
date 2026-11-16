@@ -5,9 +5,22 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Contact JScan — JScan</title>
+
+  <link rel="icon" type="image/svg+xml" href="css/logoextension.svg">
   <link rel="stylesheet" href="css/style.css">
 
   <style>
+    .brand-logo {
+      width: 50px;
+      height: 50px;
+      object-fit: contain;
+      display: block;
+      background: transparent;
+      border: none;
+      box-shadow: none;
+      padding: 0;
+    }
+
     .contact-page {
       padding-bottom: 70px;
     }
@@ -402,11 +415,18 @@
 <header class="site-header">
 
   <a class="brand" href="index.html">
-    <span class="brand-mark">J</span>
+    <img src="css/logo.png" alt="JScan Logo" class="brand-logo">
     <span>JScan</span>
   </a>
 
-  <nav class="main-nav">
+  <button class="menu-toggle"
+          aria-label="Open navigation menu"
+          aria-controls="mainNavigation"
+          aria-expanded="false">
+    ☰
+  </button>
+
+  <nav class="main-nav" id="mainNavigation">
     <a href="index.html">Home</a>
     <a class="active" href="tools.html">Explore tools</a>
     <a href="about.html">About</a>
@@ -709,7 +729,7 @@
 <footer class="site-footer wrap">
 
   <a class="brand" href="index.html">
-    <span class="brand-mark">J</span>
+    <img src="css/logo.png" alt="JScan Logo" class="brand-logo">
     <span>JScan</span>
   </a>
 
