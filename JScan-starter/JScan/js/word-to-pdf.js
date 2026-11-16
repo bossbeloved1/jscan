@@ -8,8 +8,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const downloadBtn = document.getElementById("wordDownloadBtn");
     const resetBtn = document.getElementById("wordResetBtn");
 
-    // JScan FastAPI endpoint
-    const API_URL = "http://localhost:8000/word-to-pdf";
+    // JScan live Railway FastAPI endpoint
+    const API_URL = "https://jscan-production.up.railway.app/word-to-pdf";
 
     let selectedFile = null;
     let isRendering = false;
@@ -91,7 +91,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // CONVERT WORD TO PDF THROUGH FASTAPI
+    // CONVERT WORD TO PDF THROUGH LIVE FASTAPI BACKEND
     downloadBtn.addEventListener("click", async () => {
         if (!selectedFile || isRendering || isConverting) {
             status.textContent = "Please upload a Word document first.";
