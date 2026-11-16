@@ -1,8 +1,8 @@
-
+```javascript
 document.addEventListener("DOMContentLoaded", () => {
 
-    // Local Docker API
-    const API_URL = "http://localhost:8000/compress";
+    // Live Railway API
+    const API_URL = "https://jscan-production.up.railway.app/compress";
 
     const fileInput = document.getElementById("pdfFileInput");
     const fileInfo = document.getElementById("pdfFileInfo");
@@ -161,27 +161,27 @@ document.addEventListener("DOMContentLoaded", () => {
             );
 
             if (!response.ok) {
-    const errorText = await response.text();
+                const errorText = await response.text();
 
-    let errorMessage = "PDF compression failed.";
+                let errorMessage = "PDF compression failed.";
 
-    try {
-        const errorData = JSON.parse(errorText);
+                try {
+                    const errorData = JSON.parse(errorText);
 
-        if (typeof errorData.detail === "string") {
-            errorMessage = errorData.detail;
-        } else if (errorData.detail) {
-            errorMessage = JSON.stringify(errorData.detail);
-        } else {
-            errorMessage = JSON.stringify(errorData);
-        }
+                    if (typeof errorData.detail === "string") {
+                        errorMessage = errorData.detail;
+                    } else if (errorData.detail) {
+                        errorMessage = JSON.stringify(errorData.detail);
+                    } else {
+                        errorMessage = JSON.stringify(errorData);
+                    }
 
-    } catch (_) {
-        errorMessage = errorText || errorMessage;
-    }
+                } catch (_) {
+                    errorMessage = errorText || errorMessage;
+                }
 
-    throw new Error(errorMessage);
-}
+                throw new Error(errorMessage);
+            }
 
             const contentType =
                 response.headers.get("content-type") || "";
@@ -315,3 +315,4 @@ document.addEventListener("DOMContentLoaded", () => {
     updateCompressButton();
 
 });
+```
