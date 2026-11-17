@@ -35,6 +35,30 @@
       font-size: 12px;
       line-height: 1.5;
     }
+
+    .logo-background-control {
+      margin-top: 16px;
+    }
+
+    .logo-background-control .color-input-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+    }
+
+    .logo-background-control input[type="color"] {
+      width: 48px;
+      min-width: 48px;
+      height: 42px;
+      padding: 3px;
+      cursor: pointer;
+    }
+
+    .logo-background-control input[type="text"] {
+      flex: 1;
+      min-width: 0;
+    }
   </style>
 </head>
 
@@ -216,6 +240,36 @@
 
           <small class="qr-style-description">
             Choose the shape of the background and clipping area around your centre logo.
+          </small>
+        </div>
+
+        <!-- NEW: LOGO BACKGROUND COLOUR -->
+
+        <div class="logo-background-control">
+          <label class="field-label" for="logoBgColor">
+            Logo Background Colour
+          </label>
+
+          <div class="color-input-wrap">
+            <input
+              type="color"
+              id="logoBgColor"
+              value="#FFFFFF"
+              aria-label="Choose logo background colour"
+            >
+
+            <input
+              type="text"
+              id="logoBgHex"
+              value="#FFFFFF"
+              maxlength="7"
+              placeholder="#FFFFFF"
+              aria-label="Logo background HEX colour"
+            >
+          </div>
+
+          <small class="qr-style-description">
+            Choose any background colour for the area behind your uploaded logo. This is independent of the QR code background.
           </small>
         </div>
 
