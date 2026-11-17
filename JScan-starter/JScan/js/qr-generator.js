@@ -36,6 +36,10 @@
     const logoShape = $('logoShape');
     const removeLogo = $('removeLogo');
 
+    // Logo background colour elements
+    const logoBgColor = $('logoBgColor');
+    const logoBgHex = $('logoBgHex');
+
     // QR appearance elements
     const qrPattern = $('qrPattern');
     const qrCorner = $('qrCorner');
@@ -94,11 +98,17 @@
         return {
             qr_pattern: qrPattern.value,
             qr_corner: qrCorner.value,
+
             logo_shape: uploadedLogo && logoReady
                 ? logoShape.value
                 : null,
+
             logo_size: uploadedLogo && logoReady
                 ? Number(logoSize.value)
+                : null,
+
+            logo_background_color: uploadedLogo && logoReady
+                ? logoBgColor.value.toUpperCase()
                 : null
         };
     }
@@ -325,8 +335,8 @@
                 break;
         }
 
-        // Fill the selected shape with the QR background colour.
-        ctx.fillStyle = bg.value;
+        // Fill the logo shape with its independent background colour.
+        ctx.fillStyle = logoBgColor.value;
         ctx.fill();
 
         // Clip the logo to the selected shape.
@@ -441,7 +451,47 @@
     }
 
     // ==========================================
-    // 8. REMOVE LOGO
+    // 8. LOGO BACKGROUND COLOUR CONTROL
+    // ==========================================
+
+    if (logoBgColor && logoBgHex) {
+
+        // Colour picker changed.
+        logoBgColor.addEventListener('input', function () {
+            syncColor(logoBgColor, logoBgHex);
+            clearGeneratedQr();
+        });
+
+        // HEX input changed.
+        logoBgHex.addEventListener('input', function () {
+            const value = logoBgHex.value.trim();
+
+            if (validHex(value)) {
+                logoBgColor.value = value;
+                logoBgHex.value = value.toUpperCase();
+
+                clearGeneratedQr();
+            }
+        });
+
+        // Normalize the HEX value when the user leaves the field.
+        logoBgHex.addEventListener('blur', function () {
+            const value = logoBgHex.value.trim();
+
+            if (validHex(value)) {
+                logoBgColor.value = value;
+                logoBgHex.value = value.toUpperCase();
+            } else {
+                syncColor(logoBgColor, logoBgHex);
+            }
+        });
+
+        // Ensure both controls start synchronized.
+        syncColor(logoBgColor, logoBgHex);
+    }
+
+    // ==========================================
+    // 9. REMOVE LOGO
     // ==========================================
 
     if (removeLogo) {
@@ -471,7 +521,7 @@
     }
 
     // ==========================================
-    // 9. CLEAR GENERATED QR CODE
+    // 10. CLEAR GENERATED QR CODE
     // ==========================================
 
     function clearGeneratedQr() {
@@ -491,7 +541,7 @@
     }
 
     // ==========================================
-    // 10. GENERATE QR CODE
+    // 11. GENERATE QR CODE
     // ==========================================
 
     function generateQr() {
@@ -518,6 +568,17 @@
         if (!Number.isFinite(dimension) || dimension <= 0) {
             contrastNote.textContent =
                 'Please select a valid QR code size.';
+
+            return false;
+        }
+
+        if (
+            uploadedLogo &&
+            logoReady &&
+            !validHex(logoBgColor.value)
+        ) {
+            contrastNote.textContent =
+                'Please choose a valid logo background colour.';
 
             return false;
         }
@@ -586,7 +647,7 @@
 
             placeholder.hidden = true;
 
-            // Check colour contrast.
+            // Check QR code colour contrast.
             const ratio = contrastRatio(fg.value, bg.value);
 
             if (ratio < 3) {
@@ -623,7 +684,7 @@
     }
 
     // ==========================================
-    // 11. COLOUR PICKER EVENTS
+    // 12. QR COLOUR PICKER EVENTS
     // ==========================================
 
     fg.addEventListener('input', () => {
@@ -637,7 +698,7 @@
     });
 
     // ==========================================
-    // 12. HEX COLOUR INPUTS
+    // 13. HEX COLOUR INPUTS
     // ==========================================
 
     fgHex.addEventListener('input', () => {
@@ -655,7 +716,7 @@
     });
 
     // ==========================================
-    // 13. CONTENT AND SIZE EVENTS
+    // 14. CONTENT AND SIZE EVENTS
     // ==========================================
 
     text.addEventListener('input', clearGeneratedQr);
@@ -663,7 +724,7 @@
     size.addEventListener('change', clearGeneratedQr);
 
     // ==========================================
-    // 14. QR PATTERN AND CORNER EVENTS
+    // 15. QR PATTERN AND CORNER EVENTS
     // ==========================================
 
     if (qrPattern) {
@@ -675,7 +736,7 @@
     }
 
     // ==========================================
-    // 15. GENERATE BUTTON
+    // 16. GENERATE BUTTON
     // ==========================================
 
     generateBtn.addEventListener('click', async () => {
@@ -697,7 +758,7 @@
     });
 
     // ==========================================
-    // 16. POPULAR COLOUR PRESETS
+    // 17. POPULAR COLOUR PRESETS
     // ==========================================
 
     $('swatches').addEventListener('click', event => {
@@ -718,7 +779,7 @@
     });
 
     // ==========================================
-    // 17. CREATE QR IMAGE BLOB
+    // 18. CREATE QR IMAGE BLOB
     // ==========================================
 
     async function createQrImageBlob(extension) {
@@ -736,7 +797,7 @@
     }
 
     // ==========================================
-    // 18. DOWNLOAD PNG
+    // 19. DOWNLOAD PNG
     // ==========================================
 
     downloadPng.addEventListener('click', async () => {
@@ -769,7 +830,7 @@
     });
 
     // ==========================================
-    // 19. DOWNLOAD SVG
+    // 20. DOWNLOAD SVG
     // ==========================================
 
     downloadSvg.addEventListener('click', async () => {
@@ -802,7 +863,7 @@
     });
 
     // ==========================================
-    // 20. SAVE QR CODE AND IMAGE TO SUPABASE
+    // 21. SAVE QR CODE AND IMAGE TO SUPABASE
     // ==========================================
 
     if (saveQrCode) {
@@ -1009,7 +1070,7 @@
     }
 
     // ==========================================
-    // 21. INITIALIZE
+    // 22. INITIALIZE
     // ==========================================
 
     // Do not generate a QR code automatically on page load.
