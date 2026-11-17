@@ -36,18 +36,25 @@
       line-height: 1.5;
     }
 
-    .logo-background-control {
+    .control-divider {
+      margin: 24px 0;
+    }
+
+    .logo-background-control,
+    .design-control-group {
       margin-top: 16px;
     }
 
-    .logo-background-control .color-input-wrap {
+    .logo-background-control .color-input-wrap,
+    .design-control-group .color-input-wrap {
       display: flex;
       align-items: center;
       gap: 10px;
       width: 100%;
     }
 
-    .logo-background-control input[type="color"] {
+    .logo-background-control input[type="color"],
+    .design-control-group input[type="color"] {
       width: 48px;
       min-width: 48px;
       height: 42px;
@@ -55,9 +62,177 @@
       cursor: pointer;
     }
 
-    .logo-background-control input[type="text"] {
+    .logo-background-control input[type="text"],
+    .design-control-group input[type="text"] {
       flex: 1;
       min-width: 0;
+    }
+
+    .qr-content-type {
+      margin-bottom: 16px;
+    }
+
+    .qr-content-type select {
+      width: 100%;
+    }
+
+    .qr-content-description {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted, #777);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .qr-dynamic-fields {
+      display: grid;
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .qr-dynamic-fields:empty {
+      display: none;
+    }
+
+    .qr-dynamic-fields .field-label {
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .qr-dynamic-fields input,
+    .qr-dynamic-fields textarea,
+    .qr-dynamic-fields select {
+      width: 100%;
+    }
+
+    .design-option {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 14px;
+      padding: 12px;
+      border: 1px solid var(--border, #ddd);
+      border-radius: 10px;
+    }
+
+    .design-option-text {
+      display: grid;
+      gap: 3px;
+    }
+
+    .design-option-text strong {
+      font-size: 14px;
+    }
+
+    .design-option-text small {
+      color: var(--muted, #777);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .design-option input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+      cursor: pointer;
+      accent-color: var(--blue, #2563eb);
+    }
+
+    .range-control {
+      margin-top: 14px;
+    }
+
+    .range-control input[type="range"] {
+      width: 100%;
+    }
+
+    .range-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 7px;
+    }
+
+    .range-heading label {
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .range-value {
+      color: var(--blue, #2563eb);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .design-subsection {
+      margin-top: 18px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border, #ddd);
+    }
+
+    .design-subsection h3 {
+      margin: 0 0 5px;
+      font-size: 15px;
+    }
+
+    .design-subsection > p {
+      margin: 0 0 12px;
+      color: var(--muted, #777);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .logo-upload-box {
+      position: relative;
+    }
+
+    .logo-upload-box input[type="file"] {
+      width: 100%;
+    }
+
+    .logo-background-control {
+      padding-top: 4px;
+    }
+
+    .logo-border-controls,
+    .qr-border-controls,
+    .gradient-controls {
+      margin-top: 12px;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    .qr-style-select,
+    .qr-content-type select {
+      min-height: 42px;
+    }
+
+    .qr-design-note {
+      margin-top: 12px;
+      padding: 11px 12px;
+      border-radius: 8px;
+      background: var(--surface-secondary, rgba(128, 128, 128, 0.08));
+      color: var(--muted, #777);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .frame-label-input {
+      margin-top: 12px;
+    }
+
+    .frame-label-input input {
+      width: 100%;
+    }
+
+    @media (max-width: 600px) {
+      .field-row {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
@@ -94,16 +269,59 @@
   <div class="page-intro">
     <span class="eyebrow">QR & BARCODE TOOLS</span>
     <h1>QR Code Generator</h1>
-    <p>Create a custom QR code in seconds. Choose your colours, upload a logo and watch the preview update live.</p>
+    <p>Create custom QR codes for websites, Wi-Fi, contacts, social media and more. Design your QR code with custom colours, gradients, logos, borders and frames.</p>
   </div>
 
   <div class="generator-layout">
 
     <section class="panel generator-controls">
 
-      <h2>1. Add your content</h2>
+      <!-- ==================================
+           1. QR CONTENT
+      =================================== -->
 
-      <label class="field-label" for="qrTitle">QR code name (optional)</label>
+      <h2>1. Choose your QR code type</h2>
+
+      <div class="qr-content-type">
+        <label class="field-label" for="qrContentType">
+          QR Code Type
+        </label>
+
+        <select id="qrContentType">
+          <option value="url" selected>Website / URL</option>
+          <option value="text">Plain Text</option>
+          <option value="wifi">Wi-Fi Network</option>
+          <option value="vcard">Contact Card (vCard)</option>
+          <option value="email">Email</option>
+          <option value="whatsapp">WhatsApp</option>
+          <option value="sms">SMS Message</option>
+          <option value="phone">Phone Number</option>
+          <option value="location">Location / GPS</option>
+          <option value="event">Event / Calendar</option>
+          <option value="instagram">Instagram Profile</option>
+          <option value="facebook">Facebook Profile</option>
+          <option value="linkedin">LinkedIn Profile</option>
+          <option value="youtube">YouTube Channel</option>
+          <option value="x">X Profile</option>
+          <option value="paypal">PayPal Link</option>
+          <option value="app">App Download Link</option>
+        </select>
+
+        <small class="qr-content-description">
+          Choose what you want your QR code to contain.
+        </small>
+      </div>
+
+      <div id="qrDynamicFields" class="qr-dynamic-fields"></div>
+
+      <div class="qr-design-note">
+        Different QR types will display the appropriate fields when connected to the generator.
+      </div>
+
+      <label class="field-label" for="qrTitle">
+        QR code name (optional)
+      </label>
+
       <input
         type="text"
         id="qrTitle"
@@ -111,28 +329,59 @@
         placeholder="e.g. My Business Website"
       >
 
-      <label class="field-label" for="qrText">Website URL or text</label>
-      <textarea id="qrText" rows="3" placeholder="https://example.com">https://jscan.app</textarea>
+      <label class="field-label" for="qrText">
+        QR content
+      </label>
+
+      <textarea
+        id="qrText"
+        rows="3"
+        placeholder="Enter your website URL or text"
+      >https://jscan.app</textarea>
 
       <div class="control-divider"></div>
 
-      <h2>2. Customize your design</h2>
+      <!-- ==================================
+           2. QR COLOURS
+      =================================== -->
+
+      <h2>2. Customize your colours</h2>
 
       <div class="field-row">
 
         <div>
-          <label class="field-label" for="qrColor">QR code colour</label>
+          <label class="field-label" for="qrColor">
+            QR code colour
+          </label>
+
           <div class="color-input-wrap">
             <input id="qrColor" type="color" value="#2563eb">
-            <input id="qrHex" type="text" value="#2563EB" maxlength="7" aria-label="QR hex colour">
+
+            <input
+              id="qrHex"
+              type="text"
+              value="#2563EB"
+              maxlength="7"
+              aria-label="QR hex colour"
+            >
           </div>
         </div>
 
         <div>
-          <label class="field-label" for="bgColor">Background colour</label>
+          <label class="field-label" for="bgColor">
+            Background colour
+          </label>
+
           <div class="color-input-wrap">
             <input id="bgColor" type="color" value="#ffffff">
-            <input id="bgHex" type="text" value="#FFFFFF" maxlength="7" aria-label="Background hex colour">
+
+            <input
+              id="bgHex"
+              type="text"
+              value="#FFFFFF"
+              maxlength="7"
+              aria-label="Background hex colour"
+            >
           </div>
         </div>
 
@@ -151,9 +400,113 @@
         <button style="--swatch:#0891b2" data-color="#0891B2" aria-label="Teal"></button>
       </div>
 
+      <!-- ==================================
+           3. GRADIENTS
+      =================================== -->
+
       <div class="control-divider"></div>
 
-      <h2>3. Customize QR appearance</h2>
+      <h2>3. Gradient customization</h2>
+
+      <div class="design-option">
+        <div class="design-option-text">
+          <strong>Enable QR gradient</strong>
+          <small>Blend two colours across your QR code.</small>
+        </div>
+
+        <input
+          type="checkbox"
+          id="qrGradientEnabled"
+          aria-label="Enable QR gradient"
+        >
+      </div>
+
+      <div id="qrGradientControls" class="gradient-controls" hidden>
+
+        <label class="field-label" for="qrGradientType">
+          Gradient direction
+        </label>
+
+        <select id="qrGradientType" class="qr-style-select">
+          <option value="linear">Linear Gradient</option>
+          <option value="radial">Radial Gradient</option>
+        </select>
+
+        <div class="field-row">
+
+          <div>
+            <label class="field-label" for="qrGradientStart">
+              First gradient colour
+            </label>
+
+            <div class="color-input-wrap">
+              <input
+                type="color"
+                id="qrGradientStart"
+                value="#2563EB"
+              >
+
+              <input
+                type="text"
+                id="qrGradientStartHex"
+                value="#2563EB"
+                maxlength="7"
+                aria-label="First gradient HEX colour"
+              >
+            </div>
+          </div>
+
+          <div>
+            <label class="field-label" for="qrGradientEnd">
+              Second gradient colour
+            </label>
+
+            <div class="color-input-wrap">
+              <input
+                type="color"
+                id="qrGradientEnd"
+                value="#9333EA"
+              >
+
+              <input
+                type="text"
+                id="qrGradientEndHex"
+                value="#9333EA"
+                maxlength="7"
+                aria-label="Second gradient HEX colour"
+              >
+            </div>
+          </div>
+
+        </div>
+
+        <div class="qr-style-group">
+          <label class="field-label" for="qrGradientRotation">
+            Gradient rotation
+          </label>
+
+          <input
+            type="range"
+            id="qrGradientRotation"
+            min="0"
+            max="360"
+            value="45"
+          >
+
+          <small class="qr-style-description">
+            Rotate the direction of the colour blend.
+          </small>
+        </div>
+
+      </div>
+
+      <!-- ==================================
+           4. QR PATTERNS
+      =================================== -->
+
+      <div class="control-divider"></div>
+
+      <h2>4. QR pattern and corner styles</h2>
 
       <div class="qr-style-group">
         <label class="field-label" for="qrPattern">
@@ -190,11 +543,223 @@
         </small>
       </div>
 
+      <!-- ==================================
+           5. OUTER QR BORDER
+      =================================== -->
+
       <div class="control-divider"></div>
 
-      <h2>4. Add a centre icon</h2>
+      <h2>5. QR code border and frame</h2>
 
-      <label class="field-label" for="qrLogo">Upload your logo or icon</label>
+      <div class="design-option">
+        <div class="design-option-text">
+          <strong>Enable outer border</strong>
+          <small>Add an outline around the entire QR design.</small>
+        </div>
+
+        <input
+          type="checkbox"
+          id="qrBorderEnabled"
+          aria-label="Enable QR outer border"
+        >
+      </div>
+
+      <div id="qrBorderControls" class="qr-border-controls" hidden>
+
+        <label class="field-label" for="qrBorderColor">
+          Border colour
+        </label>
+
+        <div class="color-input-wrap">
+          <input
+            type="color"
+            id="qrBorderColor"
+            value="#2563EB"
+          >
+
+          <input
+            type="text"
+            id="qrBorderHex"
+            value="#2563EB"
+            maxlength="7"
+            aria-label="QR border HEX colour"
+          >
+        </div>
+
+        <div class="range-control">
+          <div class="range-heading">
+            <label for="qrBorderWidth">Border thickness</label>
+            <span class="range-value" id="qrBorderWidthValue">4 px</span>
+          </div>
+
+          <input
+            type="range"
+            id="qrBorderWidth"
+            min="1"
+            max="30"
+            value="4"
+          >
+        </div>
+
+        <div class="range-control">
+          <div class="range-heading">
+            <label for="qrBorderPadding">Border spacing</label>
+            <span class="range-value" id="qrBorderPaddingValue">20 px</span>
+          </div>
+
+          <input
+            type="range"
+            id="qrBorderPadding"
+            min="0"
+            max="80"
+            value="20"
+          >
+        </div>
+
+        <div class="range-control">
+          <div class="range-heading">
+            <label for="qrBorderRadius">Corner roundness</label>
+            <span class="range-value" id="qrBorderRadiusValue">12 px</span>
+          </div>
+
+          <input
+            type="range"
+            id="qrBorderRadius"
+            min="0"
+            max="60"
+            value="12"
+          >
+        </div>
+
+        <div class="qr-style-group">
+          <label class="field-label" for="qrBorderStyle">
+            Border style
+          </label>
+
+          <select id="qrBorderStyle" class="qr-style-select">
+            <option value="solid">Solid</option>
+            <option value="dashed">Dashed</option>
+            <option value="dotted">Dotted</option>
+          </select>
+        </div>
+
+        <div class="qr-design-note">
+          The border will surround the complete QR artwork, not just the QR modules.
+        </div>
+
+      </div>
+
+      <!-- ==================================
+           6. CREATIVE FRAME
+      =================================== -->
+
+      <div class="design-subsection">
+
+        <h3>Creative QR frame</h3>
+
+        <p>Add a label or call-to-action around your QR code.</p>
+
+        <div class="design-option">
+          <div class="design-option-text">
+            <strong>Enable QR frame</strong>
+            <small>Include a decorative frame in your export.</small>
+          </div>
+
+          <input
+            type="checkbox"
+            id="qrFrameEnabled"
+            aria-label="Enable QR frame"
+          >
+        </div>
+
+        <div id="qrFrameControls" hidden>
+
+          <div class="qr-style-group">
+            <label class="field-label" for="qrFrameStyle">
+              Frame style
+            </label>
+
+            <select id="qrFrameStyle" class="qr-style-select">
+              <option value="simple">Simple Frame</option>
+              <option value="rounded">Rounded Frame</option>
+              <option value="bold">Bold Frame</option>
+              <option value="minimal">Minimal Frame</option>
+            </select>
+          </div>
+
+          <div class="frame-label-input">
+            <label class="field-label" for="qrFrameText">
+              Frame text
+            </label>
+
+            <input
+              type="text"
+              id="qrFrameText"
+              maxlength="40"
+              value="SCAN ME"
+              placeholder="e.g. SCAN ME"
+            >
+          </div>
+
+          <div class="qr-style-group">
+            <label class="field-label" for="qrFrameTextColor">
+              Frame text colour
+            </label>
+
+            <div class="color-input-wrap">
+              <input
+                type="color"
+                id="qrFrameTextColor"
+                value="#2563EB"
+              >
+
+              <input
+                type="text"
+                id="qrFrameTextHex"
+                value="#2563EB"
+                maxlength="7"
+                aria-label="Frame text HEX colour"
+              >
+            </div>
+          </div>
+
+          <div class="qr-style-group">
+            <label class="field-label" for="qrFrameBgColor">
+              Frame background colour
+            </label>
+
+            <div class="color-input-wrap">
+              <input
+                type="color"
+                id="qrFrameBgColor"
+                value="#FFFFFF"
+              >
+
+              <input
+                type="text"
+                id="qrFrameBgHex"
+                value="#FFFFFF"
+                maxlength="7"
+                aria-label="Frame background HEX colour"
+              >
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- ==================================
+           7. CENTRE LOGO
+      =================================== -->
+
+      <div class="control-divider"></div>
+
+      <h2>6. Add a centre logo or icon</h2>
+
+      <label class="field-label" for="qrLogo">
+        Upload your logo or icon
+      </label>
 
       <div class="logo-upload-box">
         <input
@@ -243,7 +808,7 @@
           </small>
         </div>
 
-        <!-- NEW: LOGO BACKGROUND COLOUR -->
+        <!-- LOGO BACKGROUND COLOUR -->
 
         <div class="logo-background-control">
           <label class="field-label" for="logoBgColor">
@@ -269,8 +834,89 @@
           </div>
 
           <small class="qr-style-description">
-            Choose any background colour for the area behind your uploaded logo. This is independent of the QR code background.
+            Choose any background colour behind your uploaded logo. This is independent of the main QR background.
           </small>
+        </div>
+
+        <!-- LOGO BORDER -->
+
+        <div class="design-subsection">
+
+          <h3>Logo outline and border</h3>
+
+          <p>Add a visible outline around the selected logo shape.</p>
+
+          <div class="design-option">
+            <div class="design-option-text">
+              <strong>Enable logo border</strong>
+              <small>Outline the edges of the logo shape.</small>
+            </div>
+
+            <input
+              type="checkbox"
+              id="logoBorderEnabled"
+              aria-label="Enable logo border"
+            >
+          </div>
+
+          <div id="logoBorderControls" class="logo-border-controls" hidden>
+
+            <label class="field-label" for="logoBorderColor">
+              Logo border colour
+            </label>
+
+            <div class="color-input-wrap">
+              <input
+                type="color"
+                id="logoBorderColor"
+                value="#2563EB"
+              >
+
+              <input
+                type="text"
+                id="logoBorderHex"
+                value="#2563EB"
+                maxlength="7"
+                aria-label="Logo border HEX colour"
+              >
+            </div>
+
+            <div class="range-control">
+              <div class="range-heading">
+                <label for="logoBorderWidth">Border thickness</label>
+                <span class="range-value" id="logoBorderWidthValue">4 px</span>
+              </div>
+
+              <input
+                type="range"
+                id="logoBorderWidth"
+                min="1"
+                max="25"
+                value="4"
+              >
+            </div>
+
+            <div class="range-control">
+              <div class="range-heading">
+                <label for="logoBorderOpacity">Border transparency</label>
+                <span class="range-value" id="logoBorderOpacityValue">70%</span>
+              </div>
+
+              <input
+                type="range"
+                id="logoBorderOpacity"
+                min="0"
+                max="100"
+                value="70"
+              >
+            </div>
+
+            <small class="qr-style-description">
+              0% makes the border completely transparent. 100% makes it fully visible.
+            </small>
+
+          </div>
+
         </div>
 
         <button type="button" class="btn btn-ghost" id="removeLogo">
@@ -279,17 +925,43 @@
 
       </div>
 
+      <!-- ==================================
+           8. DOWNLOAD SETTINGS
+      =================================== -->
+
       <div class="control-divider"></div>
 
-      <h2>5. Download settings</h2>
+      <h2>7. Download settings</h2>
 
-      <label class="field-label" for="qrSize">Download size</label>
+      <label class="field-label" for="qrSize">
+        Download size
+      </label>
 
       <select id="qrSize">
         <option value="256">Small — 256 × 256</option>
         <option value="512" selected>Medium — 512 × 512</option>
         <option value="1024">Large — 1024 × 1024</option>
+        <option value="2048">Extra Large — 2048 × 2048</option>
       </select>
+
+      <div class="qr-style-group">
+        <label class="field-label" for="qrExportFormat">
+          Preferred export format
+        </label>
+
+        <select id="qrExportFormat">
+          <option value="png">PNG Image</option>
+          <option value="svg">SVG Vector</option>
+        </select>
+
+        <small class="qr-style-description">
+          You can still use either download button in the preview panel.
+        </small>
+      </div>
+
+      <div class="qr-design-note">
+        Always test your finished QR code with a phone camera before printing or sharing it. Complex styling, logos and gradients can affect readability.
+      </div>
 
       <div class="contrast-note" id="contrastNote">
         ✓ Colour contrast looks suitable for scanning.
@@ -300,6 +972,10 @@
       </button>
 
     </section>
+
+    <!-- ==================================
+         PREVIEW PANEL
+    =================================== -->
 
     <aside class="panel preview-panel">
 
@@ -313,12 +989,14 @@
       </div>
 
       <div class="qr-stage" id="qrStage">
+
         <div id="qrcode"></div>
 
         <div class="qr-placeholder" id="qrPlaceholder">
           <span>▦</span>
           <p>Your QR code will appear here</p>
         </div>
+
       </div>
 
       <p class="preview-caption">
@@ -326,6 +1004,7 @@
       </p>
 
       <div class="download-actions">
+
         <button class="btn btn-primary" id="downloadPng" disabled>
           ↓ Download PNG
         </button>
@@ -333,6 +1012,7 @@
         <button class="btn btn-ghost" id="downloadSvg" disabled>
           ↓ Download SVG
         </button>
+
       </div>
 
       <button
@@ -352,7 +1032,7 @@
       ></p>
 
       <p class="fine-print">
-        Tip: Keep a strong contrast between the code and background for reliable scanning. Avoid very light foreground colours.
+        Tip: Keep strong contrast between the QR code and background for reliable scanning. Avoid very light foreground colours.
       </p>
 
     </aside>
