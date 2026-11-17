@@ -33,15 +33,20 @@
     const logoOptions = $('logoOptions');
     const logoSize = $('logoSize');
     const logoSizeValue = $('logoSizeValue');
+    const logoShape = $('logoShape');
     const removeLogo = $('removeLogo');
 
-    let qr = null;
+    // QR appearance elements
+    const qrPattern = $('qrPattern');
+    const qrCorner = $('qrCorner');
+
+    let qrInstance = null;
     let uploadedLogo = null;
     let logoReady = false;
     let isSaving = false;
 
     // ==========================================
-    // 2. VALIDATION
+    // 2. VALIDATION AND HELPERS
     // ==========================================
 
     const validHex = value => /^#[0-9a-f]{6}$/i.test(value);
@@ -83,6 +88,39 @@
             type === 'success' ? '#16a34a' :
             type === 'error' ? '#ef4444' :
             'var(--blue)';
+    }
+
+    function getSelectedStyles() {
+        return {
+            qr_pattern: qrPattern.value,
+            qr_corner: qrCorner.value,
+            logo_shape: uploadedLogo && logoReady
+                ? logoShape.value
+                : null,
+            logo_size: uploadedLogo && logoReady
+                ? Number(logoSize.value)
+                : null
+        };
+    }
+
+    function getCanvas() {
+        return holder.querySelector('canvas');
+    }
+
+    function downloadBlob(blob, fileName) {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+
+        link.href = url;
+        link.download = fileName;
+
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+
+        setTimeout(() => {
+            URL.revokeObjectURL(url);
+        }, 1500);
     }
 
     // ==========================================
@@ -172,7 +210,143 @@
     }
 
     // ==========================================
-    // 4. LOGO UPLOAD
+    // 4. CREATE SHAPED LOGO
+    // ==========================================
+
+    function createShapedLogo() {
+        if (!uploadedLogo || !logoReady) {
+            return null;
+        }
+
+        const dimension = 512;
+        const canvas = document.createElement('canvas');
+
+        canvas.width = dimension;
+        canvas.height = dimension;
+
+        const ctx = canvas.getContext('2d');
+
+        if (!ctx) {
+            throw new Error('Unable to prepare the uploaded logo.');
+        }
+
+        const shape = logoShape.value;
+        const padding = dimension * 0.08;
+
+        const x = padding;
+        const y = padding;
+        const boxSize = dimension - padding * 2;
+
+        const innerPadding = boxSize * 0.19;
+
+        const imageSize = boxSize - innerPadding * 2;
+
+        const imageRatio = Math.min(
+            imageSize / uploadedLogo.width,
+            imageSize / uploadedLogo.height
+        );
+
+        const drawWidth = uploadedLogo.width * imageRatio;
+        const drawHeight = uploadedLogo.height * imageRatio;
+
+        const drawX = (dimension - drawWidth) / 2;
+        const drawY = (dimension - drawHeight) / 2;
+
+        ctx.save();
+
+        // Create the selected logo shape.
+        ctx.beginPath();
+
+        switch (shape) {
+
+            case 'circle':
+                ctx.arc(
+                    dimension / 2,
+                    dimension / 2,
+                    boxSize / 2,
+                    0,
+                    Math.PI * 2
+                );
+                break;
+
+            case 'rounded':
+                ctx.roundRect(
+                    x,
+                    y,
+                    boxSize,
+                    boxSize,
+                    boxSize * 0.22
+                );
+                break;
+
+            case 'diamond':
+                ctx.moveTo(dimension / 2, y);
+                ctx.lineTo(x + boxSize, dimension / 2);
+                ctx.lineTo(dimension / 2, y + boxSize);
+                ctx.lineTo(x, dimension / 2);
+                ctx.closePath();
+                break;
+
+            case 'hexagon':
+                for (let i = 0; i < 6; i++) {
+                    const angle =
+                        (Math.PI / 3) * i - Math.PI / 6;
+
+                    const px =
+                        dimension / 2 +
+                        (boxSize / 2) * Math.cos(angle);
+
+                    const py =
+                        dimension / 2 +
+                        (boxSize / 2) * Math.sin(angle);
+
+                    if (i === 0) {
+                        ctx.moveTo(px, py);
+                    } else {
+                        ctx.lineTo(px, py);
+                    }
+                }
+
+                ctx.closePath();
+                break;
+
+            case 'shield':
+                ctx.moveTo(dimension / 2, y);
+                ctx.lineTo(x + boxSize, y + boxSize * 0.13);
+                ctx.lineTo(x + boxSize * 0.88, y + boxSize * 0.65);
+                ctx.lineTo(dimension / 2, y + boxSize);
+                ctx.lineTo(x + boxSize * 0.12, y + boxSize * 0.65);
+                ctx.lineTo(x, y + boxSize * 0.13);
+                ctx.closePath();
+                break;
+
+            default:
+                ctx.rect(x, y, boxSize, boxSize);
+                break;
+        }
+
+        // Fill the selected shape with the QR background colour.
+        ctx.fillStyle = bg.value;
+        ctx.fill();
+
+        // Clip the logo to the selected shape.
+        ctx.clip();
+
+        ctx.drawImage(
+            uploadedLogo,
+            drawX,
+            drawY,
+            drawWidth,
+            drawHeight
+        );
+
+        ctx.restore();
+
+        return canvas.toDataURL('image/png');
+    }
+
+    // ==========================================
+    // 5. LOGO UPLOAD
     // ==========================================
 
     if (logoInput) {
@@ -228,7 +402,6 @@
 
                     logoOptions.hidden = false;
 
-                    // A new logo requires fresh QR generation.
                     clearGeneratedQr();
                 };
 
@@ -249,20 +422,26 @@
     }
 
     // ==========================================
-    // 5. LOGO SIZE CONTROL
+    // 6. LOGO SIZE CONTROL
     // ==========================================
 
     if (logoSize) {
         logoSize.addEventListener('input', function () {
             logoSizeValue.textContent = this.value + '%';
-
-            // Require Generate after changing logo size.
             clearGeneratedQr();
         });
     }
 
     // ==========================================
-    // 6. REMOVE LOGO
+    // 7. LOGO SHAPE CONTROL
+    // ==========================================
+
+    if (logoShape) {
+        logoShape.addEventListener('change', clearGeneratedQr);
+    }
+
+    // ==========================================
+    // 8. REMOVE LOGO
     // ==========================================
 
     if (removeLogo) {
@@ -287,107 +466,37 @@
 
             logoOptions.hidden = true;
 
-            // Require Generate after removing logo.
             clearGeneratedQr();
         });
     }
 
     // ==========================================
-    // 7. DRAW LOGO ON QR CANVAS
-    // ==========================================
-
-    function drawLogo(canvas) {
-        if (!uploadedLogo || !logoReady || !canvas) return;
-
-        const ctx = canvas.getContext('2d');
-
-        const dimension = canvas.width;
-        const logoPercentage = Number(logoSize.value) / 100;
-        const logoDimension = dimension * logoPercentage;
-
-        const x = (dimension - logoDimension) / 2;
-        const y = (dimension - logoDimension) / 2;
-
-        const padding = logoDimension * 0.18;
-
-        const boxX = x - padding;
-        const boxY = y - padding;
-        const boxSize = logoDimension + padding * 2;
-
-        ctx.save();
-
-        ctx.fillStyle = bg.value;
-
-        const radius = Math.min(logoDimension * 0.12, 12);
-
-        ctx.beginPath();
-
-        if (typeof ctx.roundRect === 'function') {
-            ctx.roundRect(
-                boxX,
-                boxY,
-                boxSize,
-                boxSize,
-                radius
-            );
-        } else {
-            ctx.rect(boxX, boxY, boxSize, boxSize);
-        }
-
-        ctx.fill();
-
-        const ratio = Math.min(
-            logoDimension / uploadedLogo.width,
-            logoDimension / uploadedLogo.height
-        );
-
-        const drawWidth = uploadedLogo.width * ratio;
-        const drawHeight = uploadedLogo.height * ratio;
-
-        const drawX = (dimension - drawWidth) / 2;
-        const drawY = (dimension - drawHeight) / 2;
-
-        ctx.drawImage(
-            uploadedLogo,
-            drawX,
-            drawY,
-            drawWidth,
-            drawHeight
-        );
-
-        ctx.restore();
-    }
-
-    // ==========================================
-    // 8. CLEAR GENERATED QR CODE
+    // 9. CLEAR GENERATED QR CODE
     // ==========================================
 
     function clearGeneratedQr() {
-        holder.innerHTML = '';
+        holder.replaceChildren();
         holder.style.display = 'none';
 
         placeholder.hidden = false;
 
-        qr = null;
+        qrInstance = null;
 
-        // Disable downloads until a new QR is generated.
         downloadPng.disabled = true;
         downloadSvg.disabled = true;
 
-        // Disable saving until a new QR is generated.
         if (saveQrCode) {
             saveQrCode.disabled = true;
         }
     }
 
     // ==========================================
-    // 9. GENERATE QR CODE
+    // 10. GENERATE QR CODE
     // ==========================================
 
     function generateQr() {
         const content = text.value.trim();
 
-        // Remove any previous QR before generating.
         clearGeneratedQr();
 
         if (!content) {
@@ -397,9 +506,9 @@
             return false;
         }
 
-        if (!window.QRCode) {
+        if (!window.QRCodeStyling) {
             contrastNote.textContent =
-                'QR library did not load. Check your internet connection and refresh.';
+                'QR styling library did not load. Check your internet connection and refresh.';
 
             return false;
         }
@@ -414,37 +523,67 @@
         }
 
         try {
-            holder.style.display = 'block';
+            let logoImage = null;
 
-            qr = new QRCode(holder, {
-                text: content,
+            if (uploadedLogo && logoReady) {
+                logoImage = createShapedLogo();
+            }
+
+            const pattern = qrPattern.value;
+            const corner = qrCorner.value;
+
+            const options = {
                 width: dimension,
                 height: dimension,
-                colorDark: fg.value,
-                colorLight: bg.value,
-                correctLevel: QRCode.CorrectLevel.H
-            });
+                type: 'canvas',
+                data: content,
 
-            const canvas = getCanvas();
+                margin: 12,
 
-            if (!canvas) {
-                holder.innerHTML = '';
-                holder.style.display = 'none';
-                placeholder.hidden = false;
-                qr = null;
+                qrOptions: {
+                    errorCorrectionLevel: 'H'
+                },
 
-                contrastNote.textContent =
-                    'Unable to generate QR code. Please try again.';
+                backgroundOptions: {
+                    color: bg.value
+                },
 
-                return false;
+                dotsOptions: {
+                    color: fg.value,
+                    type: pattern
+                },
+
+                cornersSquareOptions: {
+                    color: fg.value,
+                    type: corner
+                },
+
+                cornersDotOptions: {
+                    color: fg.value,
+                    type: corner === 'dot' ? 'dot' : 'square'
+                },
+
+                imageOptions: {
+                    hideBackgroundDots: true,
+                    imageSize: uploadedLogo && logoReady
+                        ? Number(logoSize.value) / 100
+                        : 0.18,
+                    margin: 8,
+                    crossOrigin: 'anonymous'
+                }
+            };
+
+            if (logoImage) {
+                options.image = logoImage;
             }
 
-            // Add uploaded logo if available.
-            if (uploadedLogo && logoReady) {
-                drawLogo(canvas);
-            }
+            qrInstance = new QRCodeStyling(options);
 
-            // Display placeholder only after successful generation.
+            holder.replaceChildren();
+            holder.style.display = 'block';
+
+            qrInstance.append(holder);
+
             placeholder.hidden = true;
 
             // Check colour contrast.
@@ -462,11 +601,9 @@
                 contrastNote.classList.remove('warning');
             }
 
-            // Enable download buttons.
             downloadPng.disabled = false;
             downloadSvg.disabled = false;
 
-            // Enable save button.
             if (saveQrCode) {
                 saveQrCode.disabled = isSaving;
             }
@@ -486,29 +623,26 @@
     }
 
     // ==========================================
-    // 10. COLOUR PICKER EVENTS
+    // 11. COLOUR PICKER EVENTS
     // ==========================================
 
     fg.addEventListener('input', () => {
         syncColor(fg, fgHex);
-
         clearGeneratedQr();
     });
 
     bg.addEventListener('input', () => {
         syncColor(bg, bgHex);
-
         clearGeneratedQr();
     });
 
     // ==========================================
-    // 11. HEX COLOUR INPUTS
+    // 12. HEX COLOUR INPUTS
     // ==========================================
 
     fgHex.addEventListener('input', () => {
         if (validHex(fgHex.value)) {
             fg.value = fgHex.value;
-
             clearGeneratedQr();
         }
     });
@@ -516,13 +650,12 @@
     bgHex.addEventListener('input', () => {
         if (validHex(bgHex.value)) {
             bg.value = bgHex.value;
-
             clearGeneratedQr();
         }
     });
 
     // ==========================================
-    // 12. CONTENT AND SIZE EVENTS
+    // 13. CONTENT AND SIZE EVENTS
     // ==========================================
 
     text.addEventListener('input', clearGeneratedQr);
@@ -530,13 +663,25 @@
     size.addEventListener('change', clearGeneratedQr);
 
     // ==========================================
-    // 13. GENERATE BUTTON
+    // 14. QR PATTERN AND CORNER EVENTS
+    // ==========================================
+
+    if (qrPattern) {
+        qrPattern.addEventListener('change', clearGeneratedQr);
+    }
+
+    if (qrCorner) {
+        qrCorner.addEventListener('change', clearGeneratedQr);
+    }
+
+    // ==========================================
+    // 15. GENERATE BUTTON
     // ==========================================
 
     generateBtn.addEventListener('click', async () => {
         const generated = generateQr();
 
-        if (!generated || !getCanvas()) return;
+        if (!generated) return;
 
         await logActivity(
             'QR code generated',
@@ -545,13 +690,14 @@
                 size: Number(size.value),
                 foreground_color: fg.value.toUpperCase(),
                 background_color: bg.value.toUpperCase(),
-                logo_used: Boolean(uploadedLogo && logoReady)
+                logo_used: Boolean(uploadedLogo && logoReady),
+                ...getSelectedStyles()
             }
         );
     });
 
     // ==========================================
-    // 14. POPULAR COLOUR PRESETS
+    // 16. POPULAR COLOUR PRESETS
     // ==========================================
 
     $('swatches').addEventListener('click', event => {
@@ -572,146 +718,91 @@
     });
 
     // ==========================================
-    // 15. GET GENERATED QR CANVAS
+    // 17. CREATE QR IMAGE BLOB
     // ==========================================
 
-    function getCanvas() {
-        return holder.querySelector('canvas');
+    async function createQrImageBlob(extension) {
+        if (!qrInstance) {
+            throw new Error('Please generate a QR code first.');
+        }
+
+        const blob = await qrInstance.getRawData(extension);
+
+        if (!blob) {
+            throw new Error('Could not create the QR image.');
+        }
+
+        return blob;
     }
 
     // ==========================================
-    // 16. CREATE PNG BLOB
-    // ==========================================
-
-    function createQrImageBlob(canvas) {
-        return new Promise((resolve, reject) => {
-            canvas.toBlob(blob => {
-                if (!blob) {
-                    reject(new Error('Could not create the QR image.'));
-                    return;
-                }
-
-                resolve(blob);
-            }, 'image/png');
-        });
-    }
-
-    // ==========================================
-    // 17. DOWNLOAD PNG
+    // 18. DOWNLOAD PNG
     // ==========================================
 
     downloadPng.addEventListener('click', async () => {
-        const canvas = getCanvas();
-
-        if (!canvas) {
+        if (!qrInstance) {
             alert('Generate a QR code first.');
             return;
         }
 
-        const output = document.createElement('canvas');
-        const dimension = Number(size.value);
+        try {
+            const blob = await createQrImageBlob('png');
+            const fileName = 'jscan-qr-code.png';
 
-        output.width = dimension;
-        output.height = dimension;
+            downloadBlob(blob, fileName);
 
-        const ctx = output.getContext('2d');
+            await logActivity(
+                'QR code downloaded as PNG',
+                fileName,
+                {
+                    size: Number(size.value),
+                    foreground_color: fg.value.toUpperCase(),
+                    background_color: bg.value.toUpperCase(),
+                    ...getSelectedStyles()
+                }
+            );
 
-        ctx.fillStyle = bg.value;
-        ctx.fillRect(0, 0, dimension, dimension);
-
-        ctx.drawImage(canvas, 0, 0, dimension, dimension);
-
-        const fileName = 'jscan-qr-code.png';
-
-        const link = document.createElement('a');
-
-        link.download = fileName;
-        link.href = output.toDataURL('image/png');
-
-        link.click();
-
-        await logActivity(
-            'QR code downloaded as PNG',
-            fileName,
-            {
-                size: dimension,
-                foreground_color: fg.value.toUpperCase(),
-                background_color: bg.value.toUpperCase()
-            }
-        );
+        } catch (error) {
+            console.error('PNG download error:', error);
+            alert(error.message || 'Unable to download the QR code.');
+        }
     });
 
     // ==========================================
-    // 18. DOWNLOAD SVG
+    // 19. DOWNLOAD SVG
     // ==========================================
 
     downloadSvg.addEventListener('click', async () => {
-        const canvas = getCanvas();
-
-        if (!canvas) {
+        if (!qrInstance) {
             alert('Generate a QR code first.');
             return;
         }
 
-        const dimension = Number(size.value);
-        const image = canvas.toDataURL('image/png');
+        try {
+            const blob = await createQrImageBlob('svg');
+            const fileName = 'jscan-qr-code.svg';
 
-        const svg = `
-            <svg
-                xmlns="http://www.w3.org/2000/svg"
-                xmlns:xlink="http://www.w3.org/1999/xlink"
-                width="${dimension}"
-                height="${dimension}"
-                viewBox="0 0 ${dimension} ${dimension}"
-            >
-                <rect
-                    width="100%"
-                    height="100%"
-                    fill="${bg.value}"
-                />
+            downloadBlob(blob, fileName);
 
-                <image
-                    href="${image}"
-                    xlink:href="${image}"
-                    width="${dimension}"
-                    height="${dimension}"
-                />
-            </svg>
-        `;
+            await logActivity(
+                'QR code downloaded as SVG',
+                fileName,
+                {
+                    size: Number(size.value),
+                    foreground_color: fg.value.toUpperCase(),
+                    background_color: bg.value.toUpperCase(),
+                    ...getSelectedStyles()
+                }
+            );
 
-        const blob = new Blob(
-            [svg],
-            { type: 'image/svg+xml;charset=utf-8' }
-        );
-
-        const url = URL.createObjectURL(blob);
-
-        const fileName = 'jscan-qr-code.svg';
-
-        const link = document.createElement('a');
-
-        link.href = url;
-        link.download = fileName;
-
-        link.click();
-
-        setTimeout(() => {
-            URL.revokeObjectURL(url);
-        }, 1000);
-
-        await logActivity(
-            'QR code downloaded as SVG',
-            fileName,
-            {
-                size: dimension,
-                foreground_color: fg.value.toUpperCase(),
-                background_color: bg.value.toUpperCase()
-            }
-        );
+        } catch (error) {
+            console.error('SVG download error:', error);
+            alert(error.message || 'Unable to download the QR code.');
+        }
     });
 
     // ==========================================
-    // 19. SAVE QR CODE AND IMAGE TO SUPABASE
+    // 20. SAVE QR CODE AND IMAGE TO SUPABASE
     // ==========================================
 
     if (saveQrCode) {
@@ -737,9 +828,7 @@
                 return;
             }
 
-            const canvas = getCanvas();
-
-            if (!canvas) {
+            if (!qrInstance) {
                 showSaveMessage(
                     'Please generate your QR code before saving.',
                     'error'
@@ -779,10 +868,10 @@
                 }
 
                 // ----------------------------------
-                // B. CONVERT QR CANVAS TO PNG
+                // B. CONVERT QR TO PNG
                 // ----------------------------------
 
-                const imageBlob = await createQrImageBlob(canvas);
+                const imageBlob = await createQrImageBlob('png');
 
                 // ----------------------------------
                 // C. CREATE UNIQUE IMAGE FILE NAME
@@ -793,7 +882,6 @@
                     : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
                 const fileName = `${uniqueId}.png`;
-
                 const imagePath = `${user.id}/${fileName}`;
 
                 // ----------------------------------
@@ -843,7 +931,6 @@
 
                 if (saveError) throw saveError;
 
-                // QR record is now safely saved.
                 qrSavedToDatabase = true;
 
                 // ----------------------------------
@@ -860,7 +947,9 @@
                         size: qrData.size,
                         foreground_color: qrData.foreground_color,
                         background_color: qrData.background_color,
-                        image_path: imagePath
+                        image_path: imagePath,
+                        logo_used: Boolean(uploadedLogo && logoReady),
+                        ...getSelectedStyles()
                     }
                 );
 
@@ -885,8 +974,7 @@
                 console.error('QR save error:', error);
 
                 // ----------------------------------
-                // I. CLEAN UP ONLY IF QR DATABASE
-                // SAVE DID NOT SUCCEED
+                // I. CLEAN UP IF DATABASE SAVE FAILED
                 // ----------------------------------
 
                 if (uploadedImagePath && !qrSavedToDatabase) {
@@ -913,7 +1001,7 @@
 
                 isSaving = false;
 
-                saveQrCode.disabled = !getCanvas();
+                saveQrCode.disabled = !qrInstance;
                 saveQrCode.textContent = 'Save QR Code';
 
             }
@@ -921,7 +1009,7 @@
     }
 
     // ==========================================
-    // 20. INITIALIZE
+    // 21. INITIALIZE
     // ==========================================
 
     // Do not generate a QR code automatically on page load.
