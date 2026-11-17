@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -17,6 +18,22 @@
       border: none;
       box-shadow: none;
       padding: 0;
+    }
+
+    .qr-style-group {
+      margin-top: 16px;
+    }
+
+    .qr-style-select {
+      width: 100%;
+    }
+
+    .qr-style-description {
+      display: block;
+      margin-top: 5px;
+      color: var(--muted, #777);
+      font-size: 12px;
+      line-height: 1.5;
     }
   </style>
 </head>
@@ -112,7 +129,46 @@
 
       <div class="control-divider"></div>
 
-      <h2>3. Add a centre icon</h2>
+      <h2>3. Customize QR appearance</h2>
+
+      <div class="qr-style-group">
+        <label class="field-label" for="qrPattern">
+          QR Pattern Style
+        </label>
+
+        <select id="qrPattern" class="qr-style-select">
+          <option value="square">Classic Squares</option>
+          <option value="dots">Dots</option>
+          <option value="rounded">Rounded Squares</option>
+          <option value="extra-rounded">Extra Rounded</option>
+          <option value="classy">Classy</option>
+          <option value="classy-rounded">Classy Rounded</option>
+        </select>
+
+        <small class="qr-style-description">
+          Choose the appearance of the small modules that form your QR code.
+        </small>
+      </div>
+
+      <div class="qr-style-group">
+        <label class="field-label" for="qrCorner">
+          QR Corner Style
+        </label>
+
+        <select id="qrCorner" class="qr-style-select">
+          <option value="square">Square Corners</option>
+          <option value="extra-rounded">Rounded Corners</option>
+          <option value="dot">Circular Corners</option>
+        </select>
+
+        <small class="qr-style-description">
+          Customize the three large positioning corners of your QR code.
+        </small>
+      </div>
+
+      <div class="control-divider"></div>
+
+      <h2>4. Add a centre icon</h2>
 
       <label class="field-label" for="qrLogo">Upload your logo or icon</label>
 
@@ -144,6 +200,25 @@
           value="18"
         >
 
+        <div class="qr-style-group">
+          <label class="field-label" for="logoShape">
+            Logo Shape
+          </label>
+
+          <select id="logoShape" class="qr-style-select">
+            <option value="square">Square</option>
+            <option value="circle">Circle</option>
+            <option value="rounded">Rounded Square</option>
+            <option value="diamond">Diamond</option>
+            <option value="hexagon">Hexagon</option>
+            <option value="shield">Shield</option>
+          </select>
+
+          <small class="qr-style-description">
+            Choose the shape of the background and clipping area around your centre logo.
+          </small>
+        </div>
+
         <button type="button" class="btn btn-ghost" id="removeLogo">
           Remove logo
         </button>
@@ -152,7 +227,7 @@
 
       <div class="control-divider"></div>
 
-      <h2>4. Download settings</h2>
+      <h2>5. Download settings</h2>
 
       <label class="field-label" for="qrSize">Download size</label>
 
@@ -241,8 +316,8 @@
   <span>© 2026 JScan</span>
 </footer>
 
-<!-- QR Code Library -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<!-- QR Code Styling Library -->
+<script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1.9.2/lib/qr-code-styling.js"></script>
 
 <!-- Supabase Library and Configuration -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
