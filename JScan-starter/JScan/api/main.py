@@ -5,6 +5,7 @@ import shutil
 import subprocess
 import tempfile
 import csv
+import base64
 from pathlib import Path
 
 import httpx
@@ -55,6 +56,24 @@ app.add_middleware(
 # =========================================================
 
 MAX_UPLOAD_SIZE = 200 * 1024 * 1024
+
+# Google Cloud Vision image upload limit for this endpoint.
+HANDWRITING_MAX_UPLOAD_SIZE = 20 * 1024 * 1024
+
+GOOGLE_CLOUD_VISION_API_KEY = os.getenv(
+    "GOOGLE_CLOUD_VISION_API_KEY",
+    ""
+)
+
+GOOGLE_CLOUD_VISION_URL = (
+    "https://vision.googleapis.com/v1/images:annotate"
+)
+
+ALLOWED_HANDWRITING_TYPES = {
+    "image/jpeg",
+    "image/png",
+    "image/webp"
+}
 
 # Read the Gotenberg address from Railway environment variables.
 # The fallback is for local development only.
@@ -114,9 +133,191 @@ def home():
             "Gotenberg Word-to-PDF",
             "PDF-to-Word Conversion",
             "Excel-to-Word Conversion",
-            "Excel-to-PDF Conversion"
+            "Excel-to-PDF Conversion",
+            "Google Cloud Vision Handwriting Recognition"
         ]
     }
+
+
+# =========================================================
+# HANDWRITING TO TEXT
+# =========================================================
+
+@app.post("/handwriting-to-text")
+async def handwriting_to_text(file: UploadFile = File(...)):
+
+    if not GOOGLE_CLOUD_VISION_API_KEY:
+        raise HTTPException(
+            503,
+            "Handwriting recognition is not configured yet."
+        )
+
+    if not file.filename:
+        raise HTTPException(
+            400,
+            "Please upload an image."
+        )
+
+    content_type = (file.content_type or "").lower().split(";")[0].strip()
+
+    if content_type not in ALLOWED_HANDWRITING_TYPES:
+        raise HTTPException(
+            400,
+            "Please upload a JPG, PNG, or WebP image."
+        )
+
+    try:
+
+        image_data = await file.read(
+            HANDWRITING_MAX_UPLOAD_SIZE + 1
+        )
+
+        if not image_data:
+            raise HTTPException(
+                400,
+                "The uploaded image is empty."
+            )
+
+        if len(image_data) > HANDWRITING_MAX_UPLOAD_SIZE:
+            raise HTTPException(
+                413,
+                "Image exceeds the 20 MB upload limit."
+            )
+
+        encoded_image = base64.b64encode(
+            image_data
+        ).decode("utf-8")
+
+        request_payload = {
+            "requests": [
+                {
+                    "image": {
+                        "content": encoded_image
+                    },
+                    "features": [
+                        {
+                            "type": "DOCUMENT_TEXT_DETECTION"
+                        }
+                    ]
+                }
+            ]
+        }
+
+        async with httpx.AsyncClient(timeout=90.0) as client:
+
+            response = await client.post(
+                GOOGLE_CLOUD_VISION_URL,
+                params={
+                    "key": GOOGLE_CLOUD_VISION_API_KEY
+                },
+                json=request_payload
+            )
+
+        if response.status_code != 200:
+
+            print(
+                "Google Cloud Vision error:",
+                response.status_code,
+                response.text[:1000]
+            )
+
+            if response.status_code in (401, 403):
+                raise HTTPException(
+                    502,
+                    "Handwriting recognition authentication failed. Please contact support."
+                )
+
+            if response.status_code == 429:
+                raise HTTPException(
+                    503,
+                    "Handwriting recognition is temporarily unavailable. Please try again later."
+                )
+
+            raise HTTPException(
+                502,
+                "Could not process the handwriting image. Please try again."
+            )
+
+        result = response.json()
+
+        responses = result.get("responses", [])
+
+        if not responses:
+            raise HTTPException(
+                422,
+                "No handwriting recognition result was returned."
+            )
+
+        vision_result = responses[0]
+
+        if vision_result.get("error"):
+            print(
+                "Google Cloud Vision processing error:",
+                vision_result["error"]
+            )
+
+            raise HTTPException(
+                422,
+                "Could not recognize the text in this image. Please try another image."
+            )
+
+        full_text = (
+            vision_result
+            .get("fullTextAnnotation", {})
+            .get("text", "")
+            .strip()
+        )
+
+        if not full_text:
+            raise HTTPException(
+                422,
+                "No readable handwriting was found in this image."
+            )
+
+        return {
+            "success": True,
+            "filename": Path(file.filename).name,
+            "text": full_text,
+            "message": "Handwriting recognized successfully."
+        }
+
+    except HTTPException:
+        raise
+
+    except httpx.TimeoutException:
+
+        raise HTTPException(
+            504,
+            "Handwriting recognition took too long. Please try again."
+        )
+
+    except httpx.RequestError as error:
+
+        print(
+            "Google Cloud Vision connection error:",
+            repr(error)
+        )
+
+        raise HTTPException(
+            502,
+            "Could not connect to the handwriting recognition service."
+        )
+
+    except Exception as error:
+
+        print(
+            "JScan handwriting recognition error:",
+            repr(error)
+        )
+
+        raise HTTPException(
+            500,
+            "An error occurred while recognizing the handwriting."
+        )
+
+    finally:
+
+        await file.close()
 
 
 # =========================================================
